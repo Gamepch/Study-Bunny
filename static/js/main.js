@@ -260,12 +260,20 @@ function openWriteModal(type) {
         if (!categoryEl) return;
 
         if (type === 'certification') {
+            categoryEl.innerHTML = '<option value="공부기록">📚 공부기록</option>';
             categoryEl.value = '공부기록';
+            categoryEl.classList.add('hidden');
             if (titleEl) titleEl.innerHTML = '새 공부 인증 <span class="ml-2 text-2xl">📸</span>';
         } else {
-            // 현재 커뮤니티 필터 값 적용 (전체면 질문으로)
-            const commCat = currentCommunityFilter !== '전체' ? currentCommunityFilter : '질문';
+            categoryEl.innerHTML = `
+                <option value="잡담">🧡 잡담</option>
+                <option value="질문">🙋‍♀️ 질문</option>
+                <option value="꿀팁">💡 꿀팁</option>
+            `;
+            // 현재 커뮤니티 필터 값 적용 (전체면 잡담으로)
+            const commCat = currentCommunityFilter !== '전체' ? currentCommunityFilter : '잡담';
             categoryEl.value = commCat;
+            categoryEl.classList.remove('hidden');
             if (titleEl) titleEl.innerHTML = '커뮤니티 글쓰기 <span class="ml-2 text-2xl">✏️</span>';
         }
 
