@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,40 +26,49 @@
             color: white;
             box-shadow: 0 4px 6px -1px rgba(52, 211, 153, 0.3);
         }
+
         .mypage-tab-inactive {
             background-color: #f9fafb;
             color: #4b5563;
         }
+
         .mypage-tab-inactive:hover {
             background-color: #f3f4f6;
         }
+
         .profile-glow {
             box-shadow: 0 0 0 4px rgba(244, 114, 182, 0.15), 0 0 20px rgba(244, 114, 182, 0.1);
         }
+
         #profile-meta {
             min-height: 5rem;
         }
+
         #profile-nickname {
             min-height: 1.75rem;
             line-height: 1.75rem;
         }
+
         #profile-username {
             min-height: 1rem;
             line-height: 1rem;
         }
     </style>
     <script>
-        window.__MYPAGE_DATA__ = {{ page_data|tojson if page_data else 'null' }};
-        window.__MYPAGE_USERNAME__ = {{ target_username|tojson if target_username else 'null' }};
+        window.__MYPAGE_DATA__ = {{ page_data | tojson if page_data else 'null' }};
+        window.__MYPAGE_USERNAME__ = {{ target_username | tojson if target_username else 'null' }};
     </script>
 </head>
+
 <body class="bg-gradient-to-br from-[#F0FFF4] to-[#E6FFFA] min-h-screen font-cute">
-    
+
     <div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-10">
-        
+
         <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
-            <button onclick="history.back()" class="text-emerald-400 hover:text-emerald-600 transition-colors p-2 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button onclick="history.back()"
+                class="text-emerald-400 hover:text-emerald-600 transition-colors p-2 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
             </button>
@@ -69,29 +79,42 @@
         <div class="mx-4 mt-6 bg-white rounded-3xl shadow-sm border border-emerald-100 p-6">
             <div class="flex items-center">
                 <div class="relative w-20 h-20 shrink-0">
-                    <div id="profile-avatar-fallback" class="w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-100 profile-glow {% if page_data and page_data.user.profile_url %}hidden{% endif %}" aria-hidden="true"></div>
-                    <img id="profile-avatar" {% if page_data and page_data.user.profile_url %}src="{{ page_data.user.profile_url }}"{% endif %} alt="프로필" class="absolute inset-0 w-20 h-20 rounded-full object-cover border-2 border-emerald-200 profile-glow {% if not page_data or not page_data.user.profile_url %}hidden{% endif %}" decoding="async" onload="profileAvatarLoaded()" onerror="profileAvatarFailed()">
+                    <div id="profile-avatar-fallback"
+                        class="w-20 h-20 rounded-full bg-emerald-50 border-2 border-emerald-100 profile-glow {% if page_data and page_data.user.profile_url %}hidden{% endif %}"
+                        aria-hidden="true"></div>
+                    <img id="profile-avatar" {% if page_data and page_data.user.profile_url
+                        %}src="{{ page_data.user.profile_url }}" {% endif %} alt="프로필"
+                        class="absolute inset-0 w-20 h-20 rounded-full object-cover border-2 border-emerald-200 profile-glow {% if not page_data or not page_data.user.profile_url %}hidden{% endif %}"
+                        decoding="async" onload="profileAvatarLoaded()" onerror="profileAvatarFailed()">
                 </div>
                 <div id="profile-meta" class="ml-5 flex-1 min-w-0 flex flex-col justify-center">
-                    <h2 id="profile-nickname" class="text-xl font-bold text-gray-800 truncate">{% if page_data %}{{ page_data.user.nickname }}{% elif target_username %}{{ target_username }}{% else %}&nbsp;{% endif %}</h2>
-                    <p id="profile-username" class="text-xs text-gray-400 mt-1 truncate">{% if page_data %}@{{ page_data.user.username }}{% elif target_username %}@{{ target_username }}{% else %}&nbsp;{% endif %}</p>
+                    <h2 id="profile-nickname" class="text-xl font-bold text-gray-800 truncate">{% if page_data %}{{
+                        page_data.user.nickname }}{% elif target_username %}{{ target_username }}{% else %}&nbsp;{%
+                        endif %}</h2>
+                    <p id="profile-username" class="text-xs text-gray-400 mt-1 truncate">{% if page_data %}@{{
+                        page_data.user.username }}{% elif target_username %}@{{ target_username }}{% else %}&nbsp;{%
+                        endif %}</p>
                     <div class="flex items-center mt-3 space-x-4">
                         <div class="text-center">
-                            <span id="stat-posts" class="text-lg font-bold text-emerald-500">{% if page_data %}{{ page_data.my_posts|length }}{% else %}0{% endif %}</span>
+                            <span id="stat-posts" class="text-lg font-bold text-emerald-500">{% if page_data %}{{
+                                page_data.my_posts|length }}{% else %}0{% endif %}</span>
                             <p class="text-[10px] text-gray-400 mt-0.5">작성한 글</p>
                         </div>
                         <div class="w-px h-8 bg-emerald-100"></div>
                         <div class="text-center">
-                            <span id="stat-likes" class="text-lg font-bold text-emerald-500">{% if page_data %}—{% else %}0{% endif %}</span>
+                            <span id="stat-likes" class="text-lg font-bold text-emerald-500">{% if page_data %}—{% else
+                                %}0{% endif %}</span>
                             <p class="text-[10px] text-gray-400 mt-0.5">좋아요 한 글</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <button id="edit-profile-btn" onclick="openProfileEditModal()" class="mt-5 w-full py-3 bg-emerald-50 text-emerald-500 rounded-2xl text-sm font-bold hover:bg-emerald-100 transition-colors border border-emerald-100 active:scale-[0.98]">
+            <button id="edit-profile-btn" onclick="openProfileEditModal()"
+                class="mt-5 w-full py-3 bg-emerald-50 text-emerald-500 rounded-2xl text-sm font-bold hover:bg-emerald-100 transition-colors border border-emerald-100 active:scale-[0.98]">
                 프로필 수정하기 ✏️
             </button>
-            <button id="admin-btn" onclick="location.href='/admin'" style="display: none;" class="mt-2 w-full py-3 bg-red-50 text-red-500 rounded-2xl text-sm font-bold hover:bg-red-100 transition-colors border border-red-100 active:scale-[0.98]">
+            <button id="admin-btn" onclick="location.href='/admin'" style="display: none;"
+                class="mt-2 w-full py-3 bg-red-50 text-red-500 rounded-2xl text-sm font-bold hover:bg-red-100 transition-colors border border-red-100 active:scale-[0.98]">
                 관리자 페이지 🔐
             </button>
         </div>
@@ -150,111 +173,134 @@
                         userEl.textContent = '@' + cached.username;
                         if (cached.profile_url) setProfileAvatarSrc(cached.profile_url);
                     }
-                } catch (e) {}
+                } catch (e) { }
             })();
         </script>
 
         <div class="px-4 mt-6 flex space-x-2">
-            <button id="tab-my-posts" onclick="switchMyPageTab('my-posts')" class="mypage-tab-active flex-1 py-3 text-sm font-bold rounded-2xl transition-all">
+            <button id="tab-my-posts" onclick="switchMyPageTab('my-posts')"
+                class="mypage-tab-active flex-1 py-3 text-sm font-bold rounded-2xl transition-all">
                 📝 내가 쓴 글
             </button>
-            <button id="tab-liked-posts" onclick="switchMyPageTab('liked-posts')" class="mypage-tab-inactive flex-1 py-3 text-sm font-bold rounded-2xl transition-all">
+            <button id="tab-liked-posts" onclick="switchMyPageTab('liked-posts')"
+                class="mypage-tab-inactive flex-1 py-3 text-sm font-bold rounded-2xl transition-all">
                 ❤️ 좋아요 한 글
             </button>
         </div>
 
-        <main id="mypage-feed-container" class="m-4 bg-white rounded-3xl shadow-sm border border-emerald-100 overflow-hidden" data-server-rendered="{% if page_data %}true{% else %}false{% endif %}">
+        <main id="mypage-feed-container"
+            class="m-4 bg-white rounded-3xl shadow-sm border border-emerald-100 overflow-hidden"
+            data-server-rendered="{% if page_data %}true{% else %}false{% endif %}">
             {% if page_data %}
-                {% if page_data.my_posts %}
-                    {% for post in page_data.my_posts %}
-                    <div onclick="location.href='/post/{{ post.id }}'" class="{% if not loop.last %}border-b border-emerald-50{% endif %} p-4 flex justify-between items-start hover:bg-emerald-50/30 transition-colors cursor-pointer">
-                        <div class="flex-1 min-w-0">
-                            <span class="inline-block text-[10px] font-bold bg-emerald-50 text-emerald-500 px-2 py-0.5 rounded-md mb-1">
-                                {{ post.category or '공부기록' }}
-                            </span>
-                            <h2 class="text-[15px] font-bold text-gray-800 mb-1 truncate">
-                                {{ post.title }}
-                                <span class="text-emerald-500 text-xs ml-1">[{{ post.comment_count or 0 }}]</span>
-                            </h2>
-                            <p class="text-xs text-gray-500 mb-2 truncate">{{ post.content }}</p>
-                            <div class="flex items-center text-[11px] text-gray-400 space-x-2">
-                                <div class="flex items-center">
-                                    <img src="{{ post.profile_url or 'https://placehold.co/100x100/ffb6c1/ffffff?text=Me' }}" alt="프로필" class="w-4 h-4 rounded-full mr-1 object-cover" loading="lazy" decoding="async">
-                                    <a href="/mypage?user={{ post.username }}" class="font-medium text-gray-600 hover:text-emerald-500 hover:underline" onclick="event.stopPropagation()">{{ post.nickname }}</a>
-                                </div>
-                                <span>|</span>
-                                <span>{{ post.date }}</span>
-                                <span>|</span>
-                                <span>조회 {{ post.views or 0 }}</span>
-                            </div>
+            {% if page_data.my_posts %}
+            {% for post in page_data.my_posts %}
+            <div onclick="location.href='/post/{{ post.id }}'"
+                class="{% if not loop.last %}border-b border-emerald-50{% endif %} p-4 flex justify-between items-start hover:bg-emerald-50/30 transition-colors cursor-pointer">
+                <div class="flex-1 min-w-0">
+                    <span
+                        class="inline-block text-[10px] font-bold bg-emerald-50 text-emerald-500 px-2 py-0.5 rounded-md mb-1">
+                        {{ post.category or '공부기록' }}
+                    </span>
+                    <h2 class="text-[15px] font-bold text-gray-800 mb-1 truncate">
+                        {{ post.title }}
+                        <span class="text-emerald-500 text-xs ml-1">[{{ post.comment_count or 0 }}]</span>
+                    </h2>
+                    <p class="text-xs text-gray-500 mb-2 truncate">{{ post.content }}</p>
+                    <div class="flex items-center text-[11px] text-gray-400 space-x-2">
+                        <div class="flex items-center">
+                            <img src="{{ post.profile_url or 'https://placehold.co/100x100/ffb6c1/ffffff?text=Me' }}"
+                                alt="프로필" class="w-4 h-4 rounded-full mr-1 object-cover" loading="lazy"
+                                decoding="async">
+                            <a href="/mypage?user={{ post.username }}"
+                                class="font-medium text-gray-600 hover:text-emerald-500 hover:underline"
+                                onclick="event.stopPropagation()">{{ post.nickname }}</a>
                         </div>
-                        {% if post.image_url %}
-                        <div class="flex items-center justify-center self-center ml-3 shrink-0">
-                            <div class="w-16 h-16 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-100 shadow-sm">
-                                <img src="{{ post.image_url }}" alt="썸네일" class="w-full h-full aspect-square object-cover" loading="lazy" decoding="async">
-                            </div>
-                        </div>
-                        {% endif %}
+                        <span>|</span>
+                        <span>{{ post.date }}</span>
+                        <span>|</span>
+                        <span>조회 {{ post.views or 0 }}</span>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="text-center py-12 text-gray-400 text-xs font-medium">
-                        <span class="text-2xl block mb-2">🍀</span>
-                        아직 작성한 글이 없어요.<br>첫 번째 공부 기록을 남겨보세요!
-                    </div>
-                {% endif %}
-            {% else %}
-                <div id="mypage-feed-skeleton" class="divide-y divide-emerald-50">
-                    {% for _ in range(3) %}
-                    <div class="p-4 animate-pulse">
-                        <div class="h-3 w-16 bg-emerald-50 rounded mb-2"></div>
-                        <div class="h-4 w-3/4 bg-emerald-50 rounded mb-2"></div>
-                        <div class="h-3 w-full bg-emerald-50/80 rounded"></div>
-                    </div>
-                    {% endfor %}
                 </div>
+                {% if post.image_url %}
+                <div class="flex items-center justify-center self-center ml-3 shrink-0">
+                    <div class="w-16 h-16 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-100 shadow-sm">
+                        <img src="{{ post.image_url }}" alt="썸네일" class="w-full h-full aspect-square object-cover"
+                            loading="lazy" decoding="async">
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center py-12 text-gray-400 text-xs font-medium">
+                <span class="text-2xl block mb-2">🍀</span>
+                아직 작성한 글이 없어요.<br>첫 번째 공부 기록을 남겨보세요!
+            </div>
+            {% endif %}
+            {% else %}
+            <div id="mypage-feed-skeleton" class="divide-y divide-emerald-50">
+                {% for _ in range(3) %}
+                <div class="p-4 animate-pulse">
+                    <div class="h-3 w-16 bg-emerald-50 rounded mb-2"></div>
+                    <div class="h-4 w-3/4 bg-emerald-50 rounded mb-2"></div>
+                    <div class="h-3 w-full bg-emerald-50/80 rounded"></div>
+                </div>
+                {% endfor %}
+            </div>
             {% endif %}
         </main>
 
         <div class="px-4 py-4 border-t border-emerald-50" style="display: none;">
-            <button onclick="deleteAccount()" class="w-full py-2 bg-gray-50 text-gray-400 rounded-2xl text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-100 active:scale-[0.98]">
+            <button onclick="deleteAccount()"
+                class="w-full py-2 bg-gray-50 text-gray-400 rounded-2xl text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-100 active:scale-[0.98]">
                 회원탈퇴
             </button>
         </div>
 
     </div>
 
-    <div id="profile-edit-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+    <div id="profile-edit-modal"
+        class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
         <div class="bg-white rounded-[2rem] p-6 w-full max-w-[400px] shadow-2xl flex flex-col relative">
-            
+
             <button onclick="closeProfileEditModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
 
             <h2 class="text-xl font-bold text-gray-800 mb-6">프로필 수정 🍀</h2>
-            
+
             <div class="flex flex-col items-center mb-6">
-                <div class="relative group cursor-pointer" onclick="document.getElementById('profile-image-input').click()">
-                    <img id="edit-profile-preview" src="" alt="프로필 미리보기" class="w-24 h-24 rounded-full object-cover border-2 border-emerald-200 profile-glow transition-all">
-                    <div class="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                <div class="relative group cursor-pointer"
+                    onclick="document.getElementById('profile-image-input').click()">
+                    <img id="edit-profile-preview" src="" alt="프로필 미리보기"
+                        class="w-24 h-24 rounded-full object-cover border-2 border-emerald-200 profile-glow transition-all">
+                    <div
+                        class="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                     </div>
-                    <input type="file" id="profile-image-input" class="hidden" accept="image/*" onchange="previewProfileImage(event)">
+                    <input type="file" id="profile-image-input" class="hidden" accept="image/*"
+                        onchange="previewProfileImage(event)">
                 </div>
                 <p class="text-xs text-gray-400 mt-2">사진을 클릭하면 변경할 수 있어요</p>
             </div>
 
             <div class="space-y-2">
                 <label class="text-sm font-bold text-gray-600">닉네임</label>
-                <input type="text" id="edit-nickname-input" placeholder="새로운 닉네임을 입력하세요" class="w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <input type="text" id="edit-nickname-input" placeholder="새로운 닉네임을 입력하세요"
+                    class="w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
             </div>
 
-            <button onclick="submitProfileEdit()" class="mt-6 w-full py-4 bg-emerald-400 text-white rounded-2xl font-bold hover:bg-emerald-500 active:scale-95 transition-all shadow-md shadow-emerald-200">
+            <button onclick="submitProfileEdit()"
+                class="mt-6 w-full py-4 bg-emerald-400 text-white rounded-2xl font-bold hover:bg-emerald-500 active:scale-95 transition-all shadow-md shadow-emerald-200">
                 저장하기 ✨
             </button>
         </div>
@@ -264,4 +310,5 @@
     <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     <script src="{{ url_for('static', filename='js/mypage.js') }}"></script>
 </body>
+
 </html>

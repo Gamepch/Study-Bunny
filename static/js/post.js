@@ -121,7 +121,7 @@ function previewEditImage(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             document.getElementById('modal-preview-img').src = e.target.result;
             document.getElementById('modal-preview-container').classList.remove('hidden');
         }
@@ -250,7 +250,7 @@ function applyPostMetadata(post) {
     if (editBtn) {
         editBtn.style.display = isAuthor ? 'inline-flex' : 'none';
         if (isAuthor) {
-            editBtn.onclick = function() {
+            editBtn.onclick = function () {
                 openEditModal(currentPostData);
             };
         }
@@ -269,8 +269,8 @@ function applyPostMetadata(post) {
  */
 function renderPostDetail(post) {
     const container = document.getElementById('post-container');
-    
-    const imageHTML = post.image_url 
+
+    const imageHTML = post.image_url
         ? `<div class="mt-6 w-full rounded-2xl overflow-hidden bg-emerald-50">
                <img src="${post.image_url}" alt="첨부 이미지" class="w-full h-auto object-cover">
            </div>`
@@ -411,16 +411,16 @@ function submitComment(postId) {
         },
         body: JSON.stringify({ username: currentUser.username, content: content })
     })
-    .then(response => response.json().then(data => ({ status: response.status, body: data })))
-    .then(res => {
-        if (res.status === 201) {
-            input.value = '';
-            fetchPostDetail(postId);
-            return;
-        }
-        alert(res.body.reason || '댓글 등록에 실패했어요.');
-    })
-    .catch(error => console.error('Comment Submission Error:', error));
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(res => {
+            if (res.status === 201) {
+                input.value = '';
+                fetchPostDetail(postId);
+                return;
+            }
+            alert(res.body.reason || '댓글 등록에 실패했어요.');
+        })
+        .catch(error => console.error('Comment Submission Error:', error));
 }
 
 /**
@@ -447,23 +447,23 @@ function likePost(postId) {
         },
         body: JSON.stringify({ username: currentUser.username })
     })
-    .then(response => response.json().then(data => ({ status: response.status, body: data })))
-    .then(res => {
-        if (res.status !== 200) {
-            alert(res.body.reason || '좋아요 처리에 실패했습니다.');
-            throw new Error(res.body.reason || 'Like Error');
-        }
-        document.getElementById('like-count').innerText = res.body.likes;
-        setLikedPost(postId, true);
-        updateLikeButtonState(postId);
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(res => {
+            if (res.status !== 200) {
+                alert(res.body.reason || '좋아요 처리에 실패했습니다.');
+                throw new Error(res.body.reason || 'Like Error');
+            }
+            document.getElementById('like-count').innerText = res.body.likes;
+            setLikedPost(postId, true);
+            updateLikeButtonState(postId);
 
-        const likeBtn = document.getElementById('like-btn');
-        likeBtn.classList.add('scale-125');
-        setTimeout(() => {
-            likeBtn.classList.remove('scale-125');
-        }, 150);
-    })
-    .catch(error => console.error('Like Submission Error:', error));
+            const likeBtn = document.getElementById('like-btn');
+            likeBtn.classList.add('scale-125');
+            setTimeout(() => {
+                likeBtn.classList.remove('scale-125');
+            }, 150);
+        })
+        .catch(error => console.error('Like Submission Error:', error));
 }
 
 /**
@@ -489,18 +489,18 @@ function deletePost(postId) {
         },
         body: JSON.stringify({ username: currentUser.username })
     })
-    .then(response => response.json().then(data => ({ status: response.status, body: data })))
-    .then(res => {
-        if (res.status !== 200) {
-            alert(res.body.reason || '삭제 처리에 실패했습니다.');
-            throw new Error(res.body.reason || 'Delete Error');
-        }
-        alert('글이 깔끔하게 삭제되었습니다! 🧹');
-        window.location.href = '/';
-    })
-    .catch(error => {
-        console.error('Delete Error:', error);
-    });
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(res => {
+            if (res.status !== 200) {
+                alert(res.body.reason || '삭제 처리에 실패했습니다.');
+                throw new Error(res.body.reason || 'Delete Error');
+            }
+            alert('글이 깔끔하게 삭제되었습니다! 🧹');
+            window.location.href = '/';
+        })
+        .catch(error => {
+            console.error('Delete Error:', error);
+        });
 }
 
 /**
@@ -559,7 +559,7 @@ function openReportModal() {
         // Reset form
         document.querySelectorAll('input[name="report-reason"]').forEach(el => el.checked = false);
         document.getElementById('report-description').value = '';
-        
+
         // Set up submit handler
         document.getElementById('report-submit-btn').onclick = submitReport;
     }
@@ -612,19 +612,19 @@ function submitReport() {
             description: description
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message === 'success') {
-            alert('신고가 접수되었습니다. 감사합니다! 🙏');
-            closeReportModal();
-        } else {
-            alert(data.reason || '신고 처리에 실패했습니다.');
-        }
-    })
-    .catch(error => {
-        console.error('Report Error:', error);
-        alert('신고 중 문제가 발생했습니다.');
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === 'success') {
+                alert('신고가 접수되었습니다. 감사합니다! 🙏');
+                closeReportModal();
+            } else {
+                alert(data.reason || '신고 처리에 실패했습니다.');
+            }
+        })
+        .catch(error => {
+            console.error('Report Error:', error);
+            alert('신고 중 문제가 발생했습니다.');
+        });
 }
 
 /**
@@ -704,18 +704,18 @@ function saveCommentEdit(commentId) {
         },
         body: JSON.stringify({ username: currentUser.username, content: updatedContent })
     })
-    .then(response => response.json().then(data => ({ status: response.status, body: data })))
-    .then(res => {
-        if (res.status === 200) {
-            editingCommentId = null;
-            fetchPostDetail(POST_ID);
-            return;
-        }
-        alert(res.body.reason || '댓글 수정에 실패했습니다.');
-    })
-    .catch(error => {
-        console.error('Comment Edit Error:', error);
-    });
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(res => {
+            if (res.status === 200) {
+                editingCommentId = null;
+                fetchPostDetail(POST_ID);
+                return;
+            }
+            alert(res.body.reason || '댓글 수정에 실패했습니다.');
+        })
+        .catch(error => {
+            console.error('Comment Edit Error:', error);
+        });
 }
 
 function cancelCommentEdit() {
@@ -746,17 +746,17 @@ function deleteComment(commentId) {
         },
         body: JSON.stringify({ username: currentUser.username })
     })
-    .then(response => response.json().then(data => ({ status: response.status, body: data })))
-    .then(res => {
-        if (res.status === 200) {
-            fetchPostDetail(POST_ID);
-            return;
-        }
-        alert(res.body.reason || '댓글 삭제에 실패했습니다.');
-    })
-    .catch(error => {
-        console.error('Comment Delete Error:', error);
-    });
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(res => {
+            if (res.status === 200) {
+                fetchPostDetail(POST_ID);
+                return;
+            }
+            alert(res.body.reason || '댓글 삭제에 실패했습니다.');
+        })
+        .catch(error => {
+            console.error('Comment Delete Error:', error);
+        });
 }
 
 /**
@@ -773,18 +773,18 @@ function toggleEditModal() {
  */
 function openEditModal(postData) {
     if (!postData) return;
-    
+
     document.getElementById('modal-category').value = postData.category || "공부기록";
     document.getElementById('modal-title-input').value = postData.title;
     document.getElementById('modal-content-input').value = postData.content;
-    
+
     if (postData.image_url && postData.image_url !== "") {
         document.getElementById('modal-preview-img').src = postData.image_url;
         document.getElementById('modal-preview-container').classList.remove('hidden');
     } else {
         removeEditImage();
     }
-    
+
     toggleEditModal();
 }
 
@@ -814,7 +814,7 @@ function submitEdit() {
     formData.append('title', title);
     formData.append('content', content);
     formData.append('username', currentUser.username);
-    
+
     if (imageFile) {
         formData.append('image', imageFile);
     }

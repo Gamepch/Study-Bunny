@@ -383,7 +383,7 @@ function previewProfileImage(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             document.getElementById('edit-profile-preview').src = e.target.result;
         };
         reader.readAsDataURL(file);
@@ -465,18 +465,18 @@ function deleteAccount() {
             username: user.username
         })
     })
-    .then(res => res.json())
-    .then(data => {
-        if (data.message === 'success') {
-            localStorage.removeItem('clover_study_user');
-            alert('탈퇴되었습니다. 안녕히 가세요! 🍀');
-            location.href = '/';
-        } else {
-            alert(data.reason || '탈퇴 처리 중 문제가 발생했습니다.');
-        }
-    })
-    .catch(error => {
-        console.error('Delete Account Error:', error);
-        alert('탈퇴 중 오류가 발생했습니다.');
-    });
+        .then(res => res.json())
+        .then(data => {
+            if (data.message === 'success') {
+                localStorage.removeItem('clover_study_user');
+                alert('탈퇴되었습니다. 안녕히 가세요! 🍀');
+                location.href = '/';
+            } else {
+                alert(data.reason || '탈퇴 처리 중 문제가 발생했습니다.');
+            }
+        })
+        .catch(error => {
+            console.error('Delete Account Error:', error);
+            alert('탈퇴 중 오류가 발생했습니다.');
+        });
 }

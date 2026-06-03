@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,8 @@
     <meta name="description" content="공스타 대신 클터디! 공부 기록 공유와 커뮤니티를 중심으로 한 고등학생들의 웹사이트, 클로버 스터디에서 함께 기록하고 등급을 바꿔보세요">
     <meta name="author" content="Clover Study">
     <meta property="og:title" content="Clover Study 🍀">
-    <meta property="og:description" content="공스타 대신 클터디! 공부 기록 공유와 커뮤니티를 중심으로 한 고등학생들의 웹사이트, 클로버 스터디에서 함께 기록하고 등급을 바꿔보세요.">
+    <meta property="og:description"
+        content="공스타 대신 클터디! 공부 기록 공유와 커뮤니티를 중심으로 한 고등학생들의 웹사이트, 클로버 스터디에서 함께 기록하고 등급을 바꿔보세요.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://cloverstudy.net/">
     <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}">
@@ -20,86 +22,59 @@
     <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
-     crossorigin="anonymous"></script>
+        crossorigin="anonymous"></script>
 </head>
 
-<style>
-    /* 활성화된 탭 (Clover Study 핑크) */
-    .active-tab {
-        background-color: #34d399;
-        color: white;
-        box-shadow: 0 4px 6px -1px rgba(52, 211, 153, 0.3);
-    }
-    /* 비활성화된 탭 (은은한 회색) */
-    .inactive-tab {
-        background-color: #f9fafb;
-        color: #4b5563;
-    }
-    .inactive-tab:hover {
-        background-color: #f3f4f6;
-    }
-    /* 가로 스크롤바 숨기기 (모바일용) */
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    .category-scroll { touch-action: pan-x; }
-</style>
-
 <body class="bg-gradient-to-br from-[#F0FFF4] to-[#E6FFFA] min-h-screen font-cute">
-    
-    <div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-10">
+
+    <div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-20">
+
+        <!-- ===== HEADER ===== -->
         <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
             <div>
-                <h1 class="text-xl font-bold text-emerald-400 cursor-pointer" onclick="location.href='/'">Clover Study 🍀</h1>
+                <h1 class="text-xl font-bold text-emerald-400 cursor-pointer" onclick="location.href='/'">Clover Study
+                    🍀</h1>
                 <p class="text-xs text-gray-400">공부 기록 공유</p>
             </div>
             <div id="auth-zone" class="flex items-center"></div>
         </header>
 
-
-        <div id="category-tab-scroll" class="px-4 mt-4 mb-2 overflow-x-auto no-scrollbar cursor-grab category-scroll" style="-webkit-overflow-scrolling: touch;">
-            <div class="flex flex-nowrap whitespace-nowrap space-x-2 min-w-max pb-1">
-                <button onclick="filterCategory('전체')" id="tab-전체" class="category-tab active-tab px-4 py-2 text-sm font-bold rounded-full transition-all">
-                    ✨ 전체보기
-                </button>
-                <button onclick="filterCategory('공부기록')" id="tab-공부기록" class="category-tab inactive-tab px-4 py-2 text-sm font-bold rounded-full transition-all">
-                    📚 공부기록
-                </button>
-                <button onclick="filterCategory('질문')" id="tab-질문" class="category-tab inactive-tab px-4 py-2 text-sm font-bold rounded-full transition-all">
-                    🙋‍♀️ 질문
-                </button>
-                <button onclick="filterCategory('꿀팁')" id="tab-꿀팁" class="category-tab inactive-tab px-4 py-2 text-sm font-bold rounded-full transition-all">
-                    💡 꿀팁
-                </button>
-                <button onclick="filterCategory('잡담')" id="tab-잡담" class="category-tab inactive-tab px-4 py-2 text-sm font-bold rounded-full transition-all">
-                    🧡 잡담
-                </button>
-            </div>
+        <!-- ===== MAIN TAB BAR ===== -->
+        <div class="main-tab-bar">
+            <button id="main-tab-cert" class="main-tab-btn active" onclick="switchMainTab('certification')">
+                📸 공부 인증
+            </button>
+            <button id="main-tab-comm" class="main-tab-btn" onclick="switchMainTab('community')">
+                💬 커뮤니티
+            </button>
         </div>
 
+        <!-- ===== SEARCH BAR ===== -->
         <div class="px-4 mt-3">
             <div class="relative flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 text-gray-400" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <input type="text" id="search-input" oninput="searchFeeds()" placeholder="제목이나 내용으로 검색해보세요..." 
+                <input type="text" id="search-input" oninput="handleSearch()" placeholder="제목이나 내용으로 검색해보세요..."
                     class="w-full pl-12 pr-4 py-3 bg-white/80 border border-emerald-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:bg-white placeholder:text-gray-400 font-medium shadow-sm transition-all">
             </div>
         </div>
-        
-        <div class="px-4 mt-4">
+
+        <!-- ===== ADSENSE =====
+        <div class="px-4 mt-3">
             <div class="feed-ad-card p-4 bg-white border border-emerald-100 rounded-3xl shadow-sm">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-[11px] font-bold text-emerald-500 uppercase tracking-[0.18em]">광고</span>
                     <span class="text-[11px] text-gray-400">AdSense</span>
                 </div>
-                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
+                <script async
+                    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
                     crossorigin="anonymous"></script>
                 <div class="ad-container">
-                    <ins class="adsbygoogle"
-                        style="display:block"
-                        data-ad-format="fluid"
-                        data-ad-layout-key="-h5-2+k-7p+g2"
-                        data-ad-client="ca-pub-9449716559355642"
+                    <ins class="adsbygoogle" style="display:block" data-ad-format="fluid"
+                        data-ad-layout-key="-h5-2+k-7p+g2" data-ad-client="ca-pub-9449716559355642"
                         data-ad-slot="2224625075"></ins>
                 </div>
                 <script>
@@ -107,54 +82,87 @@
                 </script>
             </div>
         </div>
+        -->
 
-        <main id="feed-container" class="m-4 bg-white rounded-3xl shadow-sm border border-emerald-100 overflow-hidden">
-            {% if feeds %}
-                {% for feed in feeds %}
-                    <div onclick="location.href='/post/{{ feed.id }}'" class="{% if not loop.last %}border-b border-emerald-50{% endif %} p-4 flex justify-between items-start hover:bg-emerald-50/30 transition-colors cursor-pointer">
-                        <div class="flex-1 min-w-0">
-                            <span class="inline-block text-[10px] font-bold bg-emerald-50 text-emerald-500 px-2 py-0.5 rounded-md mb-1">
-                                {{ feed.category or '공부기록' }}
-                            </span>
-
-                            <h2 class="text-[15px] font-bold text-gray-800 mb-1 truncate">
-                                {{ feed.title }}
-                                <span class="text-emerald-500 text-xs ml-1">[{{ feed.comment_count or 0 }}]</span>
-                            </h2>
-                            <p class="text-xs text-gray-500 mb-2 truncate">{{ feed.content }}</p>
-                            <div class="flex items-center text-[11px] text-gray-400 space-x-2">
-                                <div class="flex items-center">
-                                    <img src="{{ feed.profile_url or 'https://placehold.co/100x100/ffb6c1/ffffff?text=Me' }}" alt="프로필" class="w-4 h-4 rounded-full mr-1 object-cover">
-                                    <a href="/mypage?user={{ feed.username }}" class="font-medium text-gray-600 hover:text-emerald-500 hover:underline" onclick="event.stopPropagation()">{{ feed.nickname }}</a>
-                                </div>
-                                <span>|</span>
-                                <span>{{ feed.date }}</span>
-                                <span>|</span>
-                                <span>조회 {{ feed.views or 0 }}</span>
-                            </div>
-                        </div>
+        <!-- ===== CERTIFICATION TAB PANEL ===== -->
+        <div id="panel-certification">
+            <div id="cert-feed-container" class="cert-grid">
+                {% set cert_feeds = feeds | selectattr('category', 'equalto', '공부기록') | list %}
+                {% if cert_feeds %}
+                {% for feed in cert_feeds %}
+                <div class="cert-card" onclick="location.href='/post/{{ feed.id }}'">
+                    <div class="cert-card-header">
+                        <img src="{{ feed.profile_url or 'https://placehold.co/100x100/6ee7b7/ffffff?text=🍀' }}"
+                            alt="프로필" class="cert-card-avatar">
+                        <span class="cert-card-nickname">{{ feed.nickname }}</span>
+                    </div>
+                    <div class="cert-card-image-wrap">
                         {% if feed.image_url %}
-                            <div class="flex items-center justify-center self-center ml-3 shrink-0">
-                                <div class="w-16 h-16 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-100 shadow-sm">
-                                    <img src="{{ feed.image_url }}" alt="썸네일" class="w-full h-full aspect-square object-cover">
-                                </div>
-                            </div>
+                        <img src="{{ feed.image_url }}" alt="공부 인증 이미지" loading="lazy">
+                        {% else %}
+                        <div class="cert-card-no-image">
+                            <span>📚</span>
+                        </div>
                         {% endif %}
                     </div>
-                {% endfor %}
-            {% else %}
-                <div class="text-center py-12 text-gray-400 text-xs font-medium">
-                    <span class="text-2xl block mb-2">🍀</span>
-                    아직 이 카테고리에 작성된 글이 없어요.<br>
-                    첫 번째 공부 기록을 남겨보세요!
+                    <div class="cert-card-footer">
+                        <div class="cert-card-stats">
+                            <span>❤️ {{ feed.likes or 0 }}</span>
+                            <span>💬 {{ feed.comment_count or 0 }}</span>
+                        </div>
+                        <p class="cert-card-preview">{{ feed.content }}</p>
+                    </div>
                 </div>
-            {% endif %}
-        </main>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <span class="emoji">📸</span>
+                    아직 공부 인증 사진이 없어요.<br>첫 번째 공부 인증을 올려보세요!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ===== COMMUNITY TAB PANEL ===== -->
+        <div id="panel-community" style="display:none;">
+            <!-- 커뮤니티 필터 칩 -->
+            <div class="filter-chip-wrap" id="community-filter-bar">
+                <button class="filter-chip active" id="chip-전체" onclick="filterCommunity('전체')">✨ 전체</button>
+                <button class="filter-chip" id="chip-질문" onclick="filterCommunity('질문')">🙋‍♀️ 질문</button>
+                <button class="filter-chip" id="chip-꿀팁" onclick="filterCommunity('꿀팁')">💡 꿀팁</button>
+                <button class="filter-chip" id="chip-잡담" onclick="filterCommunity('잡담')">🧡 잡담</button>
+            </div>
+
+            <div id="community-feed-container" class="community-list">
+                {% set comm_feeds = feeds | rejectattr('category', 'equalto', '공부기록') | list %}
+                {% if comm_feeds %}
+                {% for feed in comm_feeds %}
+                <div onclick="location.href='/post/{{ feed.id }}'" class="community-row"
+                    data-category="{{ feed.category }}">
+                    <span class="community-tag community-tag--{{ feed.category }}">{{ feed.category or '기타' }}</span>
+                    <span class="community-title">{{ feed.title }}</span>
+                    <span class="community-comment-cnt">[{{ feed.comment_count or 0 }}]</span>
+                    <span class="community-meta">
+                        {{ feed.nickname }} · {{ feed.date[:5] if feed.date else '' }}
+                    </span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <span class="emoji">💬</span>
+                    아직 커뮤니티 글이 없어요.<br>첫 번째 글을 남겨보세요!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 서버사이드 초기 데이터 -->
         <script>
-            window.__INITIAL_FEEDS__ = {{ feeds|tojson }};
+            window.__INITIAL_FEEDS__ = {{ feeds | tojson }};
         </script>
 
-        <footer class="px-4 py-6 border-t border-emerald-50 text-xs text-gray-500">
+        <!-- ===== FOOTER ===== -->
+        <footer class="px-4 py-6 border-t border-emerald-50 text-xs text-gray-500 mt-4">
             <div class="max-w-[480px] mx-auto flex flex-wrap items-center justify-center gap-3 text-sm mb-4">
                 <a href="/blog" class="hover:text-emerald-500 font-bold text-emerald-500">📚 학습자료</a>
                 <span class="text-gray-300">|</span>
@@ -168,91 +176,135 @@
                 <p>소개 / 개인정보 / 이용약관 / 문의 페이지를 통해 방문자가 쉽게 정보를 확인할 수 있습니다.</p>
             </div>
         </footer>
-        
-        <div id="write-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 flex justify-center items-center p-4">
+
+        <!-- ===== WRITE MODAL ===== -->
+        <div id="write-modal"
+            class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 flex justify-center items-center p-4">
             <div class="bg-white rounded-[2rem] p-6 sm:p-8 w-full max-w-[600px] shadow-2xl flex flex-col max-h-[90vh]">
-                
+
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                        새 공부 기록 <span class="ml-2 text-2xl">✏️</span>
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center" id="write-modal-title">
+                        새 공부 인증 <span class="ml-2 text-2xl">📸</span>
                     </h2>
-                    <button onclick="toggleWriteModal()" class="text-gray-400 hover:text-emerald-500 transition-colors bg-gray-50 rounded-full p-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    <button onclick="closeWriteModal()"
+                        class="text-gray-400 hover:text-emerald-500 transition-colors bg-gray-50 rounded-full p-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
                 <div id="form-container" class="overflow-y-auto pr-2 custom-scrollbar flex-1"></div>
-                
+
                 <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end space-x-3">
-                    <button onclick="saveDraft()" class="px-6 py-3.5 rounded-2xl text-gray-500 font-bold hover:bg-gray-100 transition-colors">임시저장</button>
-                    <button onclick="submitPost()" class="px-8 py-3.5 bg-emerald-400 text-white rounded-2xl font-bold hover:bg-emerald-500 shadow-lg shadow-emerald-200 transition-all active:scale-95">발행하기</button>
+                    <button onclick="saveDraft()"
+                        class="px-6 py-3.5 rounded-2xl text-gray-500 font-bold hover:bg-gray-100 transition-colors">임시저장</button>
+                    <button onclick="submitPost()"
+                        class="px-8 py-3.5 bg-emerald-400 text-white rounded-2xl font-bold hover:bg-emerald-500 shadow-lg shadow-emerald-200 transition-all active:scale-95">발행하기</button>
                 </div>
             </div>
         </div>
 
-        <div id="detail-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 flex justify-center items-center p-4">
-            <div class="bg-white rounded-[2rem] p-6 w-full max-w-[480px] shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
+        <!-- ===== DETAIL MODAL ===== -->
+        <div id="detail-modal"
+            class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 flex justify-center items-center p-4">
+            <div
+                class="bg-white rounded-[2rem] p-6 w-full max-w-[480px] shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
                 <header class="pb-4 border-b border-emerald-50 flex justify-between items-center">
                     <button onclick="closeDetailModal()" class="text-emerald-400 p-2 hover:bg-emerald-50 rounded-full">
                         닫기
                     </button>
                     <div class="flex space-x-2">
-                        <button id="detail-edit-btn" class="text-gray-400 hover:text-emerald-400 text-sm font-medium">수정</button>
-                        <button id="detail-delete-btn" class="text-gray-400 hover:text-red-400 text-sm font-medium">삭제</button>
+                        <button id="detail-edit-btn"
+                            class="text-gray-400 hover:text-emerald-400 text-sm font-medium">수정</button>
+                        <button id="detail-delete-btn"
+                            class="text-gray-400 hover:text-red-400 text-sm font-medium">삭제</button>
                     </div>
                 </header>
                 <div id="detail-content-area" class="mt-4">
-                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="auth-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div class="bg-white rounded-[2rem] p-6 w-full max-w-[380px] shadow-2xl flex flex-col relative animate-fade-in">
-                
-                <button onclick="closeAuthModal()" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-emerald-100 hover:text-emerald-500 transition-all" title="닫기">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+        <!-- ===== AUTH MODAL ===== -->
+        <div id="auth-modal"
+            class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+            <div
+                class="bg-white rounded-[2rem] p-6 w-full max-w-[380px] shadow-2xl flex flex-col relative animate-fade-in">
+
+                <button onclick="closeAuthModal()"
+                    class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-emerald-100 hover:text-emerald-500 transition-all"
+                    title="닫기">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
 
                 <div class="flex justify-center space-x-6 mb-6 text-lg font-bold border-b border-gray-100 pb-2">
-                    <button id="tab-login" onclick="switchAuthTab('login')" class="text-emerald-400 border-b-2 border-emerald-400 pb-2 px-2">로그인</button>
-                    <button id="tab-signup" onclick="switchAuthTab('signup')" class="text-gray-400 pb-2 px-2">회원가입</button>
+                    <button id="tab-login" onclick="switchAuthTab('login')"
+                        class="text-emerald-400 border-b-2 border-emerald-400 pb-2 px-2">로그인</button>
+                    <button id="tab-signup" onclick="switchAuthTab('signup')"
+                        class="text-gray-400 pb-2 px-2">회원가입</button>
                 </div>
 
                 <div class="space-y-4">
-                    <input type="text" id="auth-username" placeholder="아이디" class="w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                    <input type="password" id="auth-password" placeholder="비밀번호" class="w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                    
-                    <input type="text" id="auth-nickname" placeholder="사용할 닉네임 (클로버 이름)" class="hidden w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                    
+                    <input type="text" id="auth-username" placeholder="아이디"
+                        class="w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                    <input type="password" id="auth-password" placeholder="비밀번호"
+                        class="w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
+
+                    <input type="text" id="auth-nickname" placeholder="사용할 닉네임 (클로버 이름)"
+                        class="hidden w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
+
                     <div id="profile-upload-container" class="hidden">
                         <label class="block text-xs font-bold text-gray-600 mb-2">프로필 이미지 (선택사항)</label>
-                        <input type="file" id="auth-profile-image" accept="image/*" onchange="previewAuthProfileImage(event)" class="w-full p-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <input type="file" id="auth-profile-image" accept="image/*"
+                            onchange="previewAuthProfileImage(event)"
+                            class="w-full p-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
                         <div id="auth-profile-preview" class="hidden mt-3 flex justify-center">
-                            <img id="auth-profile-preview-img" src="" alt="프로필 미리보기" class="w-16 h-16 rounded-full object-cover border-2 border-emerald-200">
+                            <img id="auth-profile-preview-img" src="" alt="프로필 미리보기"
+                                class="w-16 h-16 rounded-full object-cover border-2 border-emerald-200">
                         </div>
                     </div>
                 </div>
 
-                <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="mt-6 w-full py-4 bg-emerald-400 text-white rounded-2xl font-bold hover:bg-emerald-500 active:scale-95 transition-all shadow-md shadow-emerald-200">
+                <button id="auth-submit-btn" onclick="handleAuthSubmit()"
+                    class="mt-6 w-full py-4 bg-emerald-400 text-white rounded-2xl font-bold hover:bg-emerald-500 active:scale-95 transition-all shadow-md shadow-emerald-200">
                     로그인하기
                 </button>
             </div>
         </div>
-        
-        <button onclick="toggleWriteModal()" class="fixed bottom-6 right-[calc(50%-220px)] w-14 h-14 bg-emerald-400 text-white rounded-full shadow-xl flex justify-center items-center hover:bg-emerald-500 hover:scale-110 active:scale-95 transition-all z-20">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-        </button>
 
+    </div><!-- /max-w-[480px] -->
+
+    <!-- ===== FAB MENU ===== -->
+    <!-- 오버레이 (배경 클릭 시 닫힘) -->
+    <div class="fab-menu-overlay" id="fab-overlay" onclick="closeFabMenu()"></div>
+
+    <!-- 서브메뉴 팝업 -->
+    <div class="fab-menu-popup" id="fab-menu-popup">
+        <button class="fab-menu-item" id="fab-item-comm" onclick="openWriteModal('community')">
+            <span style="font-size:18px;">✏️</span> 커뮤니티 글쓰기
+        </button>
+        <button class="fab-menu-item" id="fab-item-cert" onclick="openWriteModal('certification')">
+            <span style="font-size:18px;">📸</span> 공부 인증 업로드
+        </button>
     </div>
+
+    <!-- FAB 메인 버튼 -->
+    <button class="fab-main-btn" id="fab-main-btn" onclick="toggleFabMenu()" title="글쓰기">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+    </button>
 
     {% include '_notifications.html' %}
     <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
+
 </html>
