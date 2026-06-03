@@ -41,6 +41,25 @@ def set_charset(response):
             response.headers['Content-Type'] += '; charset=utf-8'
     return response
 
+@app.context_processor
+def override_url_for():
+    """
+    Auto-cache busting for static files by appending the file's last modified timestamp as a query parameter.
+    """
+    return dict(url_for=dated_url_for)
+
+def dated_url_for(endpoint, **values):
+    if endpoint == 'static':
+        filename = values.get('filename', None)
+        if filename:
+            file_path = os.path.join(app.root_path, endpoint, filename)
+            try:
+                # Append the file modification timestamp
+                values['v'] = int(os.stat(file_path).st_mtime)
+            except OSError:
+                pass
+    return url_for(endpoint, **values)
+
 # Configure upload directory
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True) 
