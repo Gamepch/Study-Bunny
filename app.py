@@ -31,14 +31,38 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', 'YOUR_GOOGLE_CLIEN
 GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost:5000/auth/google/callback')
 
 @app.after_request
-def set_charset(response):
-    """Ensure all responses include UTF-8 charset in Content-Type header"""
+def set_response_headers(response):
+    """
+    1) Ensure all responses include UTF-8 charset.
+    2) Set appropriate Cache-Control headers to prevent stale static assets.
+       - HTML pages: no-store (always fetch fresh)
+       - CSS / JS:   no-cache (must revalidate with server every time)
+       - Images / fonts with versioned URL: cache for 7 days
+    """
+    # --- UTF-8 charset ---
     if 'Content-Type' in response.headers:
         response.headers['Content-Type'] = response.headers['Content-Type'].replace(
             'charset=iso-8859-1', 'charset=utf-8'
         )
         if 'charset' not in response.headers['Content-Type']:
             response.headers['Content-Type'] += '; charset=utf-8'
+
+    # --- Cache-Control ---
+    content_type = response.headers.get('Content-Type', '')
+    path = request.path
+
+    if 'text/html' in content_type:
+        # HTML은 절대 캐시하지 않음 (항상 최신 페이지 표시)
+        response.headers['Cache-Control'] = 'no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    elif path.startswith('/static/') and (path.endswith('.css') or path.endswith('.js')):
+        # CSS / JS: 브라우저가 매번 서버에 확인 (ETag/Last-Modified 기반 304 활용)
+        response.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    elif path.startswith('/static/'):
+        # 이미지·폰트 등 기타 정적 파일: ?v= 버전 쿼리로 관리되므로 7일 캐시 허용
+        response.headers['Cache-Control'] = 'public, max-age=604800'
+
     return response
 
 @app.context_processor
