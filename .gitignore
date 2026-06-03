@@ -1,0 +1,7 @@
+node_modules/
+study_bunny.db
+static/uploads/*
+__pycache__/
+*.pyc
+.DS_Store
+.env

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clover Study 🍀 - 관리자 페이지</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .user-card {
+            transition: all 0.2s ease;
+        }
+        .user-card:hover {
+            box-shadow: 0 8px 16px rgba(52, 211, 153, 0.15);
+            transform: translateY(-2px);
+        }
+        .profile-img-container {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 9999px;
+            border: 2px solid #a7f3d0;
+        }
+        .profile-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+        .profile-img-container.empty {
+            background-color: #d1fae5;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-[#F0FFF4] to-[#E6FFFA] min-h-screen font-cute">
+    
+    <div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-10">
+        
+        <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
+            <button onclick="history.back()" class="text-emerald-400 hover:text-emerald-600 transition-colors p-2 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <h1 class="text-lg font-bold text-gray-700">🔐 관리자 페이지</h1>
+            <div class="min-w-[2.5rem]"></div>
+        </header>
+
+        <div class="mx-4 mt-6">
+            <div class="bg-white rounded-3xl shadow-sm border border-emerald-100 p-6 mb-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-2">📊 사이트 통계</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-3xl font-bold text-emerald-500" id="user-count">0</div>
+                        <p class="text-sm text-gray-500 mt-1">총 가입 사용자</p>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold text-red-500" id="report-count">0</div>
+                        <p class="text-sm text-gray-500 mt-1">신고 대기</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mb-4">
+                <button id="tab-users" onclick="switchAdminTab('users')" class="flex-1 py-3 px-4 bg-emerald-500 text-white rounded-2xl text-sm font-bold transition-all">
+                    👥 사용자 목록
+                </button>
+                <button id="tab-reports" onclick="switchAdminTab('reports')" class="flex-1 py-3 px-4 bg-gray-100 text-gray-600 rounded-2xl text-sm font-bold transition-all">
+                    🚨 신고 관리
+                </button>
+            </div>
+
+            <div id="users-section" class="block">
+                <h3 class="text-sm font-bold text-gray-700 mb-4">👥 가입한 사용자 목록</h3>
+                <div id="users-container" class="space-y-3">
+                    <div class="text-center py-8 text-gray-400">
+                        <span class="text-2xl block mb-2">⏳</span>
+                        사용자 목록을 불러오고 있습니다...
+                    </div>
+                </div>
+            </div>
+
+            <div id="reports-section" style="display: none;" class="block">
+                <h3 class="text-sm font-bold text-gray-700 mb-4">🚨 신고 목록</h3>
+                <div id="reports-container" class="space-y-3">
+                    <div class="text-center py-8 text-gray-400">
+                        <span class="text-2xl block mb-2">⏳</span>
+                        신고 목록을 불러오고 있습니다...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="px-4 py-6 border-t border-emerald-50 text-xs text-gray-500 mt-8">
+            <div class="max-w-[480px] mx-auto text-center">
+                <p class="text-xs">관리자 권한으로 접근한 페이지입니다.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Check admin status
+        function checkAdminAccess() {
+            const user = localStorage.getItem('clover_study_user');
+            if (!user) {
+                alert('로그인이 필요합니다.');
+                location.href = '/';
+                return false;
+            }
+
+            try {
+                const userData = JSON.parse(user);
+                if (!userData.is_admin) {
+                    alert('관리자 권한이 필요합니다.');
+                    location.href = '/';
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                location.href = '/';
+                return false;
+            }
+        }
+
+        // Load users
+        function loadUsers() {
+            if (!checkAdminAccess()) return;
+
+            const user = localStorage.getItem('clover_study_user');
+            const userData = JSON.parse(user);
+
+            fetch('/api/admin/users?username=' + userData.username)
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (response.status === 403) {
+                        alert('관리자 권한이 필요합니다.');
+                        location.href = '/';
+                        throw new Error('Admin access denied');
+                    }
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Users data:', data);
+                    if (data && data.users) {
+                        renderUsers(data.users);
+                        loadReports();
+                    } else {
+                        throw new Error('No users data in response');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                    document.getElementById('users-container').innerHTML = `
+                        <div class="text-center py-8 text-red-400">
+                            <span class="text-2xl block mb-2">❌</span>
+                            사용자 목록을 불러오지 못했습니다. (오류: ${error.message})
+                        </div>
+                    `;
+                });
+        }
+
+        // Load reports
+        function loadReports() {
+            if (!checkAdminAccess()) return;
+
+            const user = localStorage.getItem('clover_study_user');
+            const userData = JSON.parse(user);
+
+            fetch('/api/admin/reports?status=pending&username=' + userData.username)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Reports data:', data);
+                    if (data && data.reports) {
+                        renderReports(data.reports);
+                    } else {
+                        throw new Error('No reports data in response');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading reports:', error);
+                    document.getElementById('reports-container').innerHTML = `
+                        <div class="text-center py-8 text-red-400">
+                            <span class="text-2xl block mb-2">❌</span>
+                            신고 목록을 불러오지 못했습니다.
+                        </div>
+                    `;
+                });
+        }
+
+        // Switch admin tab
+        function switchAdminTab(tab) {
+            const usersSection = document.getElementById('users-section');
+            const reportsSection = document.getElementById('reports-section');
+            const usersTab = document.getElementById('tab-users');
+            const reportsTab = document.getElementById('tab-reports');
+
+            if (tab === 'users') {
+                usersSection.style.display = 'block';
+                reportsSection.style.display = 'none';
+                usersTab.classList.add('bg-emerald-500', 'text-white');
+                usersTab.classList.remove('bg-gray-100', 'text-gray-600');
+                reportsTab.classList.add('bg-gray-100', 'text-gray-600');
+                reportsTab.classList.remove('bg-emerald-500', 'text-white');
+            } else {
+                usersSection.style.display = 'none';
+                reportsSection.style.display = 'block';
+                reportsTab.classList.add('bg-emerald-500', 'text-white');
+                reportsTab.classList.remove('bg-gray-100', 'text-gray-600');
+                usersTab.classList.add('bg-gray-100', 'text-gray-600');
+                usersTab.classList.remove('bg-emerald-500', 'text-white');
+            }
+        }
+
+        // Render users
+        function renderUsers(users) {
+            const container = document.getElementById('users-container');
+            const count = document.getElementById('user-count');
+
+            count.textContent = users.length;
+
+            if (users.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <span class="text-2xl block mb-2">🍀</span>
+                        아직 가입한 사용자가 없습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = users.map(user => `
+                <div class="user-card bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex items-center gap-3">
+                    <div class="profile-img-container">
+                        <img src="${user.profile_url}" alt="프로필" onerror="this.parentElement.classList.add('empty'); this.style.display='none';">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <p class="font-bold text-gray-800 truncate">${user.nickname}</p>
+                            ${user.username === 'admin' ? '<span class="px-2 py-1 bg-red-50 text-red-500 text-[10px] font-bold rounded-full">👑 관리자</span>' : ''}
+                        </div>
+                        <p class="text-xs text-gray-400 truncate">@${user.username}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render reports
+        function renderReports(reports) {
+            const container = document.getElementById('reports-container');
+            const count = document.getElementById('report-count');
+
+            count.textContent = reports.length;
+
+            if (reports.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <span class="text-2xl block mb-2">✅</span>
+                        처리할 신고가 없습니다.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = reports.map(report => `
+                <div class="bg-white rounded-2xl shadow-sm border border-red-100 p-4 cursor-pointer hover:shadow-md hover:border-red-200 transition-all" onclick="goToTarget(${report.target_id}, '${report.target_type}', ${report.post_id})" style="cursor: pointer;">
+                    <div class="flex justify-between items-start gap-2 mb-3">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-red-600 mb-1">
+                                ${report.target_type === 'post' ? '📝 게시물' : '💬 댓글'} 신고
+                            </p>
+                            <p class="text-sm font-bold text-gray-800">사유: ${report.reason}</p>
+                            <p class="text-xs text-gray-500 mt-1">신고자: @${report.reporter_username}</p>
+                            <p class="text-xs text-gray-500">대상: @${report.target_username}</p>
+                            ${report.target_type === 'comment' && report.comment_content ? `
+                                <div class="mt-2 p-2 bg-red-50 rounded-lg border-l-2 border-red-200">
+                                    <p class="text-xs text-gray-600 font-medium mb-1">댓글 내용:</p>
+                                    <p class="text-xs text-gray-700 break-words">${report.comment_content}</p>
+                                </div>
+                            ` : ''}
+                            ${report.description ? `<p class="text-xs text-gray-600 mt-2 italic">추가 설명: ${report.description}</p>` : ''}
+                            <p class="text-xs text-gray-400 mt-2">${report.created_at}</p>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0" onclick="event.stopPropagation();">
+                            <button onclick="resolveReport(${report.id})" class="px-3 py-1 bg-green-50 text-green-600 text-xs font-bold rounded-lg hover:bg-green-100 transition">
+                                해결
+                            </button>
+                            <button onclick="dismissReport(${report.id})" class="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg hover:bg-gray-200 transition">
+                                거절
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Go to target post or comment
+        function goToTarget(targetId, targetType, postId) {
+            if (targetType === 'post') {
+                window.location.href = `/post/${targetId}`;
+            } else if (targetType === 'comment') {
+                // 댓글의 경우 해당 게시물로 이동
+                window.location.href = `/post/${postId}`;
+            }
+        }
+
+        // Resolve report
+        function resolveReport(reportId) {
+            if (confirm('이 신고를 해결 완료 처리하시겠어요?')) {
+                updateReportStatus(reportId, 'resolved');
+            }
+        }
+
+        // Dismiss report
+        function dismissReport(reportId) {
+            if (confirm('이 신고를 거절하시겠어요?')) {
+                updateReportStatus(reportId, 'dismissed');
+            }
+        }
+
+        // Update report status
+        function updateReportStatus(reportId, status) {
+            const user = localStorage.getItem('clover_study_user');
+            const userData = JSON.parse(user);
+
+            fetch(`/api/admin/reports/${reportId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    username: userData.username,
+                    status: status 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'success') {
+                    alert('신고가 처리되었습니다.');
+                    loadReports();
+                } else {
+                    alert('신고 처리에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating report:', error);
+                alert('신고 처리 중 오류가 발생했습니다.');
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+        });
+    </script>
+</body>
+</html>

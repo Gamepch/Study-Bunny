@@ -1,0 +1,52 @@
+/* 구글 폰트 적용 클래스 (HTML body에 사용) */
+.font-cute {
+    font-family: 'Gowun Dodum', sans-serif;
+}
+
+/* * 모바일 앱 같은 느낌을 주기 위해 스크롤바를 숨깁니다.
+ * (스크롤은 정상적으로 작동합니다) 
+ */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* 추가적인 커스텀 스타일이 필요하다면 아래에 자유롭게 작성해 보세요! */
+
+/* AdSense in-feed / responsive ad styles */
+.ad-container { width:100%; display:block; margin:12px 0; }
+.ad-container .adsbygoogle { display:block; width:100%; max-width:720px; margin:0 auto; }
+
+/* 모바일에서 container 너비 제한 (기본 레이아웃 max 480px) */
+@media (max-width:480px) {
+    .ad-container .adsbygoogle { max-width:100%; }
+}
+
+/* 작은 카드 레이아웃과 간격 맞추기 */
+.ad-inline { padding:0 12px; }
+
+.feed-ad-card {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid rgba(16, 185, 129, 0.18);
+    box-shadow: 0 10px 28px rgba(16, 185, 129, 0.08);
+    border-radius: 32px;
+}
+
+.feed-ad-card .ad-container {
+    margin-top: 8px;
+}
+
+/* Notification badge tweaks: prevent selection/clipping during drag, keep above content */
+.notification-badge {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    pointer-events: none;
+    z-index: 50;
+    display: flex;
+}
+
+.notification-badge.hidden {
+    display: none !important;
+}

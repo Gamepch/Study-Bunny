@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ post.title }} | Clover Study 🍀</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <meta name="description" content="{{ post.content[:120] }}">
+    <meta name="author" content="Clover Study">
+    <meta property="og:title" content="{{ post.title }} | Clover Study 🍀">
+    <meta property="og:description" content="{{ post.content[:120] }}">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="https://cloverstudy.net/post/{{ post_id }}">
+    {% if post.image_url %}
+    <meta property="og:image" content="{{ post.image_url }}">
+    {% endif %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
+     crossorigin="anonymous"></script>
+</head>
+<body class="bg-gradient-to-br from-[#F0FFF4] to-[#E6FFFA] min-h-screen font-cute">
+    
+    <div class="max-w-[480px] mx-auto bg-white min-h-screen shadow-xl relative pb-10">
+        
+        <header class="p-4 bg-emerald-50/80 backdrop-blur-md sticky top-0 z-10 border-b border-emerald-100 flex justify-between items-center">
+            <button onclick="history.back()" class="text-emerald-400 hover:text-emerald-600 transition-colors p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <div class="flex items-center space-x-1">
+                <div id="auth-zone" class="flex items-center"></div>
+                <button id="edit-button" style="display: none;" class="text-gray-400 hover:text-emerald-400 transition-colors px-2 py-1 text-sm font-medium">수정</button>
+                <button id="delete-button" onclick="deletePost(POST_ID)" style="display: none;" class="text-gray-400 hover:text-red-400 transition-colors px-2 py-1 text-sm font-medium">삭제</button>
+                <button id="report-button" onclick="reportPost(POST_ID)" class="text-gray-400 hover:text-orange-400 transition-colors px-2 py-1 text-sm font-medium">신고</button>
+            </div>
+        </header>
+        
+        <main id="post-container" class="p-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4 leading-snug">{{ post.title }}</h1>
+
+            <div class="flex justify-between items-center border-b border-emerald-50 pb-4 mb-6">
+                <div class="flex items-center">
+                    <img src="{{ post.profile_url }}" alt="프로필" class="w-10 h-10 rounded-full object-cover border border-emerald-100">
+                    <div class="ml-3">
+                        <a href="/mypage?user={{ post.username }}" class="font-bold text-gray-700 text-sm hover:text-emerald-500 hover:underline">{{ post.nickname }}</a>
+                        <div class="text-xs text-gray-400 mt-0.5">{{ post.date }} · 조회 {{ post.views }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-gray-700 leading-relaxed text-base break-all">
+                {{ post.content|replace('\n', '<br>')|safe }}
+            </div>
+
+            {% if post.image_url %}
+            <div class="mt-3 w-full rounded-2xl overflow-hidden bg-emerald-50">
+                <img src="{{ post.image_url }}" alt="첨부 이미지" class="w-full h-auto object-cover">
+            </div>
+            {% endif %}
+
+            <div class="mt-8 pt-4 flex space-x-4 border-t border-emerald-50">
+                <button id="like-btn" onclick="likePost({{ post.id }})" class="flex items-center text-emerald-400 hover:text-emerald-600 font-medium transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    좋아요 <span id="like-count" class="ml-1">{{ post.likes }}</span>
+                </button>
+                <div class="flex items-center text-gray-400 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    댓글 <span id="inline-comment-count">{{ post.comment_count }}</span>
+                </div>
+            </div>
+
+            <div id="comments-section" class="mt-8 bg-emerald-50/30 -mx-6 px-6 py-6 border-t border-emerald-50">
+                <h3 class="text-sm font-bold text-gray-700 mb-4">댓글 <span class="text-emerald-500" data-comment-count>{{ post.comment_count }}</span></h3>
+                <div class="flex space-x-2 mb-6">
+                    <input type="text" id="comment-input" placeholder="댓글을 남겨보세요..." class="flex-1 p-3 text-sm border border-emerald-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300" onkeypress="if(event.key === 'Enter') submitComment({{ post.id }})">
+                    <button onclick="submitComment({{ post.id }})" class="px-4 py-2 bg-emerald-400 text-white rounded-xl text-sm font-bold hover:bg-emerald-500 transition-colors whitespace-nowrap">등록</button>
+                </div>
+
+                <div id="comments-list" class="space-y-4" data-comment-ids="{% for c in post.comments %}{{ c.id }}{% if not loop.last %},{% endif %}{% endfor %}">
+                    {% if post.comments %}
+                        {% for comment in post.comments %}
+                            <div class="flex items-start space-x-3">
+                                <img src="{{ comment.profile_url }}" alt="프로필" class="w-8 h-8 rounded-full object-cover border border-emerald-100 bg-white">
+                                <div class="flex-1 bg-white rounded-2xl rounded-tl-none p-3 shadow-sm border border-emerald-50">
+                                    <div class="flex justify-between items-start gap-2 mb-3">
+                                        <div>
+                                            <a href="/mypage?user={{ comment.username }}" class="font-bold text-gray-700 text-xs hover:text-emerald-500 hover:underline">{{ comment.nickname }}</a>
+                                        </div>
+                                        <span class="text-[10px] text-gray-400">{{ comment.date }}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 break-all">{{ comment.content }}</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-xs text-gray-400 py-4">아직 댓글이 없어요. 첫 댓글을 남겨보세요! 🍀</div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+
+        <footer class="px-4 py-6 border-t border-emerald-50 text-xs text-gray-500">
+            <div class="max-w-[480px] mx-auto flex flex-wrap items-center justify-center gap-3 text-sm mb-4">
+                <a href="/about" class="hover:text-emerald-500">소개</a>
+                <a href="/privacy" class="hover:text-emerald-500">개인정보</a>
+                <a href="/terms" class="hover:text-emerald-500">이용약관</a>
+                <a href="/contact" class="hover:text-emerald-500">문의</a>
+            </div>
+            <div class="max-w-[480px] mx-auto space-y-2">
+                <p>Clover Study는 Google AdSense 심사를 준비하는 안전한 웹사이트입니다.</p>
+                <p>이용약관과 개인정보 처리방침을 통해 신뢰성을 제공합니다.</p>
+            </div>
+        </footer>
+    </div>
+
+    {% include '_notifications.html' %}
+    <script>
+        const POST_ID = {{ post_id }};
+        window.__POST_DATA__ = {{ post|tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/post.js') }}"></script>
+
+<!-- Report Modal -->
+<div id="report-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 flex justify-center items-center p-4">
+    <div class="bg-white rounded-[2rem] p-6 w-full max-w-[600px] shadow-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+        <div class="flex justify-between items-center mb-6 flex-shrink-0">
+            <h2 class="text-2xl font-bold text-gray-800">신고하기 🚨</h2>
+            <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-600 transition-colors bg-gray-50 rounded-full p-2 flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="space-y-4 flex-1 overflow-y-auto">
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-3">신고 사유를 선택해주세요</label>
+                <div class="space-y-2">
+                    <label class="flex items-center p-3 border-2 border-gray-100 rounded-2xl cursor-pointer hover:border-emerald-300 hover:bg-emerald-50 transition-all">
+                        <input type="radio" name="report-reason" value="스팸" class="w-4 h-4 text-emerald-500">
+                        <span class="ml-3 font-medium text-gray-700">스팸</span>
+                    </label>
+                    <label class="flex items-center p-3 border-2 border-gray-100 rounded-2xl cursor-pointer hover:border-emerald-300 hover:bg-emerald-50 transition-all">
+                        <input type="radio" name="report-reason" value="부적절한 내용" class="w-4 h-4 text-emerald-500">
+                        <span class="ml-3 font-medium text-gray-700">부적절한 내용</span>
+                    </label>
+                    <label class="flex items-center p-3 border-2 border-gray-100 rounded-2xl cursor-pointer hover:border-emerald-300 hover:bg-emerald-50 transition-all">
+                        <input type="radio" name="report-reason" value="개인정보 침해" class="w-4 h-4 text-emerald-500">
+                        <span class="ml-3 font-medium text-gray-700">개인정보 침해</span>
+                    </label>
+                    <label class="flex items-center p-3 border-2 border-gray-100 rounded-2xl cursor-pointer hover:border-emerald-300 hover:bg-emerald-50 transition-all">
+                        <input type="radio" name="report-reason" value="기타" class="w-4 h-4 text-emerald-500">
+                        <span class="ml-3 font-medium text-gray-700">기타</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-2">추가 설명 (선택사항)</label>
+                <textarea id="report-description" placeholder="더 자세한 내용을 입력해주세요..." class="w-full p-3 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 resize-none" rows="3"></textarea>
+            </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end gap-3 flex-shrink-0">
+            <button onclick="closeReportModal()" class="px-6 py-3 rounded-xl text-gray-700 bg-gray-100 font-bold hover:bg-gray-200 transition-colors">취소</button>
+            <button id="report-submit-btn" class="px-8 py-3 bg-emerald-400 text-white rounded-xl font-bold hover:bg-emerald-500 shadow-lg shadow-emerald-200 transition-all active:scale-95">신고하기</button>
+        </div>
+    </div>
+</div>
+
+<div id="edit-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 flex justify-center items-center p-4">
+    <div class="bg-white rounded-[2rem] p-6 sm:p-8 w-full max-w-[600px] shadow-2xl flex flex-col max-h-[90vh]">
+        
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                기록 수정하기 <span class="ml-2 text-2xl">🛠️</span>
+            </h2>
+            <button onclick="toggleEditModal()" class="text-gray-400 hover:text-emerald-500 transition-colors bg-gray-50 rounded-full p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="edit-form-container" class="overflow-y-auto pr-2 custom-scrollbar flex-1"></div>
+        
+        <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end space-x-3">
+            <button onclick="toggleEditModal()" class="px-6 py-3.5 rounded-2xl text-gray-500 font-bold hover:bg-gray-100 transition-colors">취소</button>
+            <button onclick="submitEdit()" class="px-8 py-3.5 bg-emerald-400 text-white rounded-2xl font-bold hover:bg-emerald-500 shadow-lg shadow-emerald-200 transition-all active:scale-95">수정 완료</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
