@@ -10,11 +10,14 @@
     <meta property="og:title" content="{{ post.title }} | Clover Study 🍀">
     <meta property="og:description" content="{{ post.content[:120] }}">
     <meta property="og:type" content="article">
-    <meta name="twitter:card" content="summary_large_image">
-    <link rel="canonical" href="https://cloverstudy.net/post/{{ post_id }}">
+    <meta property="og:url" content="https://cloverstudy.net/post/{{ post_id }}">
     {% if post.image_url %}
     <meta property="og:image" content="{{ post.image_url }}">
+    {% else %}
+    <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}">
     {% endif %}
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="https://cloverstudy.net/post/{{ post_id }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
