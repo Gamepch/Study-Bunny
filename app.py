@@ -65,129 +65,119 @@ def get_db_connection():
 
 def init_db():
     """
-    Initialize the database with necessary tables and default data.
+    Initialize the database with necessary tables.
+    Migration code removed — assumes a fresh DB file.
+    category values: '공부기록' (공부 인증 탭) | '질문','꿀팁','잡담' (커뮤니티 탭)
     """
     conn = get_db_connection()
 
+    # ── posts ─────────────────────────────────────────────────
     conn.execute('''
         CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category TEXT,
-            username TEXT,
-            nickname TEXT,
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            category    TEXT NOT NULL DEFAULT '잡담'
+                            CHECK(category IN ('공부기록','질문','꿀팁','잡담')),
+            username    TEXT NOT NULL,
+            nickname    TEXT NOT NULL DEFAULT '익명의 클로버',
             profile_url TEXT,
-            title TEXT,
-            content TEXT,
-            date TEXT,
-            image_url TEXT,
-            views INTEGER DEFAULT 0,
-            likes INTEGER DEFAULT 0
+            title       TEXT NOT NULL,
+            content     TEXT NOT NULL,
+            date        TEXT NOT NULL,
+            image_url   TEXT DEFAULT '',
+            views       INTEGER NOT NULL DEFAULT 0,
+            likes       INTEGER NOT NULL DEFAULT 0
         )
     ''')
 
+    # ── comments ──────────────────────────────────────────────
     conn.execute('''
         CREATE TABLE IF NOT EXISTS comments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            post_id INTEGER,
-            username TEXT,
-            nickname TEXT,
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id     INTEGER NOT NULL,
+            username    TEXT NOT NULL,
+            nickname    TEXT NOT NULL,
             profile_url TEXT,
-            content TEXT,
-            date TEXT,
-            FOREIGN KEY (post_id) REFERENCES posts (id)
+            content     TEXT NOT NULL,
+            date        TEXT NOT NULL,
+            FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE
         )
     ''')
 
+    # ── post_likes ────────────────────────────────────────────
     conn.execute('''
         CREATE TABLE IF NOT EXISTS post_likes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            post_id INTEGER,
-            username TEXT,
-            date TEXT,
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id  INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            date     TEXT NOT NULL,
             UNIQUE(post_id, username),
-            FOREIGN KEY (post_id) REFERENCES posts (id)
+            FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE
         )
     ''')
 
+    # ── users ─────────────────────────────────────────────────
+    # login_method: 'local' | 'google'
     conn.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            username TEXT PRIMARY KEY,
-            password TEXT NOT NULL,
-            email TEXT UNIQUE,
-            google_id TEXT UNIQUE,
-            nickname TEXT,
-            profile_url TEXT,
-            login_method TEXT DEFAULT 'local',
-            created_at TEXT
+            username     TEXT PRIMARY KEY,
+            password     TEXT NOT NULL,
+            email        TEXT UNIQUE,
+            google_id    TEXT UNIQUE,
+            nickname     TEXT,
+            profile_url  TEXT,
+            login_method TEXT NOT NULL DEFAULT 'local',
+            created_at   TEXT
         )
     ''')
 
-    # Migrate existing users table - add missing columns if they don't exist
-    existing_columns = [row['name'] for row in conn.execute('PRAGMA table_info(users)').fetchall()]
-    if 'email' not in existing_columns:
-        try:
-            conn.execute('ALTER TABLE users ADD COLUMN email TEXT UNIQUE')
-        except:
-            pass
-    if 'google_id' not in existing_columns:
-        try:
-            conn.execute('ALTER TABLE users ADD COLUMN google_id TEXT UNIQUE')
-        except:
-            pass
-    if 'login_method' not in existing_columns:
-        try:
-            conn.execute('ALTER TABLE users ADD COLUMN login_method TEXT DEFAULT "local"')
-        except:
-            pass
-    if 'created_at' not in existing_columns:
-        try:
-            conn.execute('ALTER TABLE users ADD COLUMN created_at TEXT')
-        except:
-            pass
-
-    # Add username column to posts table if it does not exist
-    existing_columns = [row['name'] for row in conn.execute('PRAGMA table_info(posts)').fetchall()]
-    if 'username' not in existing_columns:
-        conn.execute('ALTER TABLE posts ADD COLUMN username TEXT')
-
+    # ── notifications ─────────────────────────────────────────
+    # type: 'comment' | 'like'
     conn.execute('''
         CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            recipient_username TEXT NOT NULL,
-            actor_username TEXT NOT NULL,
-            actor_nickname TEXT,
-            type TEXT NOT NULL,
-            post_id INTEGER NOT NULL,
-            post_title TEXT,
-            comment_id INTEGER,
-            message TEXT NOT NULL,
-            is_read INTEGER DEFAULT 0,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (post_id) REFERENCES posts (id)
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            recipient_username  TEXT NOT NULL,
+            actor_username      TEXT NOT NULL,
+            actor_nickname      TEXT,
+            type                TEXT NOT NULL CHECK(type IN ('comment','like')),
+            post_id             INTEGER NOT NULL,
+            post_title          TEXT,
+            comment_id          INTEGER,
+            message             TEXT NOT NULL,
+            is_read             INTEGER NOT NULL DEFAULT 0,
+            created_at          TEXT NOT NULL,
+            FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE
         )
     ''')
 
+    # ── reports ───────────────────────────────────────────────
+    # target_type: 'post' | 'comment'
+    # status: 'pending' | 'resolved' | 'dismissed'
     conn.execute('''
         CREATE TABLE IF NOT EXISTS reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
             reporter_username TEXT NOT NULL,
-            target_type TEXT NOT NULL,
-            target_id INTEGER NOT NULL,
-            post_id INTEGER,
-            target_username TEXT,
-            reason TEXT NOT NULL,
-            description TEXT,
-            created_at TEXT NOT NULL,
-            status TEXT DEFAULT 'pending',
-            FOREIGN KEY (post_id) REFERENCES posts (id)
+            target_type       TEXT NOT NULL CHECK(target_type IN ('post','comment')),
+            target_id         INTEGER NOT NULL,
+            post_id           INTEGER,
+            target_username   TEXT,
+            reason            TEXT NOT NULL,
+            description       TEXT,
+            created_at        TEXT NOT NULL,
+            status            TEXT NOT NULL DEFAULT 'pending'
+                                  CHECK(status IN ('pending','resolved','dismissed')),
+            FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE
         )
     ''')
 
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_username ON posts(username)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_post_likes_username ON post_likes(username)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_username, is_read, id DESC)')
-    conn.execute('CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status)')
+    # ── indexes ───────────────────────────────────────────────
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_category  ON posts(category)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_username  ON posts(username)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_date      ON posts(date DESC)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_likes_post      ON post_likes(post_id)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_likes_username  ON post_likes(username)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_comments_post   ON comments(post_id)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_notif_recipient ON notifications(recipient_username, is_read, id DESC)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_reports_status  ON reports(status)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at DESC)')
 
     conn.commit()
@@ -260,12 +250,19 @@ def create_feed():
     if not username:
         return jsonify({"message": "fail", "reason": "로그인 후 글을 작성해주세요."}), 401
 
-    category = request.form.get('category', '공부기록')
-    title = request.form.get('title')
-    content = request.form.get('content')
-    nickname = request.form.get('nickname', '익명의 클로버')
-    profile_url = request.form.get('profile_url', 'https://placehold.co/100x100/6ee7b7/ffffff?text=Clover')
+    VALID_CATEGORIES = {'공부기록', '질문', '꿀팁', '잡담'}
+    category = request.form.get('category', '잡담')
+    if category not in VALID_CATEGORIES:
+        category = '잡담'
+
+    title = (request.form.get('title') or '').strip()
+    content = (request.form.get('content') or '').strip()
+    nickname = (request.form.get('nickname') or '익명의 클로버').strip()
+    profile_url = request.form.get('profile_url', '')
     image_url = ''
+
+    if not title or not content:
+        return jsonify({"message": "fail", "reason": "제목과 내용을 모두 입력해주세요."}), 400
 
     if 'image' in request.files:
         file = request.files['image']
@@ -285,6 +282,7 @@ def create_feed():
     conn.commit()
     conn.close()
     return jsonify({"message": "success"}), 201
+
 
 @app.route('/')
 def index():
@@ -482,10 +480,18 @@ def update_post(post_id):
         conn.close()
         return jsonify({"message": "fail", "reason": "작성자만 수정할 수 있습니다."}), 403
 
-    category = request.form.get('category', '공부기록')
-    title = request.form.get('title')
-    content = request.form.get('content')
-    
+    VALID_CATEGORIES = {'공부기록', '질문', '꿀팁', '잡담'}
+    category = request.form.get('category', '잡담')
+    if category not in VALID_CATEGORIES:
+        category = '잡담'
+
+    title = (request.form.get('title') or '').strip()
+    content = (request.form.get('content') or '').strip()
+
+    if not title or not content:
+        conn.close()
+        return jsonify({"message": "fail", "reason": "제목과 내용을 모두 입력해주세요."}), 400
+
     current_post = conn.execute('SELECT image_url FROM posts WHERE id = ?', (post_id,)).fetchone()
     image_url = current_post['image_url'] if current_post else ""
 
@@ -499,15 +505,16 @@ def update_post(post_id):
             image_url = f"/static/uploads/{filename}"
 
     conn.execute('''
-        UPDATE posts 
-        SET category = ?, title = ?, content = ?, image_url = ? 
+        UPDATE posts
+        SET category = ?, title = ?, content = ?, image_url = ?
         WHERE id = ?
     ''', (category, title, content, image_url, post_id))
-    
+
     conn.commit()
     conn.close()
-    
+
     return jsonify({"message": "success"}), 200
+
 
 @app.route('/api/comments/<int:comment_id>', methods=['PUT'])
 def update_comment(comment_id):
