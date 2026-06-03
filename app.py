@@ -662,7 +662,42 @@ def blog_list():
             'subtitle': '30일 안에 공부 습관을 형성하는 체계적인 방법을 소개합니다.',
             'category': '습관 형성',
             'file': 'adsense_content_10.html'
-        }
+        },
+        {
+            'id': 11,
+            'title': "전교 1등은 알고 있는 '내가 모르는 것'의 비밀",
+            'subtitle': '메타인지 능력을 기르는 3가지 방법으로 착각적 인지를 깨부수고 공부 효율을 극대화해보세요.',
+            'category': '학습 기법',
+            'file': 'adsense_content_11.html'
+        },
+        {
+            'id': 12,
+            'title': "공부할 때 스마트폰 유혹을 이기는 '디지털 디톡스'",
+            'subtitle': '집중력을 파괴하는 디지털 유혹의 과학적 원리와 의지력이 필요 없는 실전 차단 전략',
+            'category': '공부 환경',
+            'file': 'adsense_content_12.html'
+        },
+        {
+            'id': 13,
+            'title': "잠을 줄이면 성적이 떨어지는 이유",
+            'subtitle': '뇌과학이 증명한 수면과 기억의 상관관계 및 학습 효율을 극대화하는 최적의 수면 전략',
+            'category': '피로 관리',
+            'file': 'adsense_content_13.html'
+        },
+        {
+            'id': 14,
+            'title': '공부 슬럼프와 번아웃을 극복하는 방법',
+            'subtitle': '무기력에서 벗어나 시동을 거는 5분 규칙과 뇌과학 기반의 능동적 휴식 전략',
+            'category': '심리 관리',
+            'file': 'adsense_content_14.html'
+        },
+        {
+            'id': 15,
+            'title': '시험 당일 포텐을 터뜨리는 실전 시뮬레이션',
+            'subtitle': '실력을 200% 발휘하는 마지막 필살기 및 3단계 시험지 운영 법칙',
+            'category': '시험 실전',
+            'file': 'adsense_content_15.html'
+        },
     ]
     return render_template('blog_list.html', articles=articles)
 
@@ -681,7 +716,12 @@ def blog_detail(article_id):
         7: 'adsense_content_07.html',
         8: 'adsense_content_08.html',
         9: 'adsense_content_09.html',
-        10: 'adsense_content_10.html'
+        10: 'adsense_content_10.html',
+        11: 'adsense_content_11.html',
+        12: 'adsense_content_12.html',
+        13: 'adsense_content_13.html',
+        14: 'adsense_content_14.html',
+        15: 'adsense_content_15.html',
     }
     
     if article_id not in articles:
