@@ -277,10 +277,19 @@ function openWriteModal(type) {
             if (titleEl) titleEl.innerHTML = '커뮤니티 글쓰기 <span class="ml-2 text-2xl">✏️</span>';
         }
 
-        // 임시저장 불러오기
+        // 임시저장 불러오기 (사용자 확인 후)
         const hasDraft = localStorage.getItem('clover_draft');
-        if (hasDraft) loadDraft();
-        else {
+        if (hasDraft) {
+            const restore = confirm('작성 중이던 임시저장 글이 있어요. 이어서 쓸까요?\n(취소하면 임시저장이 삭제됩니다)');
+            if (restore) {
+                loadDraft();
+            } else {
+                clearDraft();
+                document.getElementById('modal-title-input').value = '';
+                document.getElementById('modal-content-input').value = '';
+                removeImage();
+            }
+        } else {
             document.getElementById('modal-title-input').value = '';
             document.getElementById('modal-content-input').value = '';
             removeImage();
