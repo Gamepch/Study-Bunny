@@ -5,43 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>혼자보다 함께 - 효과적인 그룹 스터디 운영하는 방법</title>
     <meta name="description" content="그룹 스터디의 효과와 운영 방법을 배워봅시다. 다양한 관점 습득, 깊이 있는 이해, 동기 부여, 효과적인 그룹 운영 전략을 상세히 설명합니다.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.8;
-            color: #333;
-            background-color: #f9f9f9;
+            font-family: 'Gowun Dodum', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.85;
+            color: #334155;
+            background-color: #f0fff4;
+            background-image: radial-gradient(#e6ffa2 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; background-color: white; }
-        article { padding: 40px 20px; }
+        .container { 
+            max-width: 800px; 
+            margin: 40px auto; 
+            padding: 40px; 
+            background-color: white; 
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05);
+            border: 1px solid #e6ffa2;
+        }
+        article { padding: 0; }
         h1 { 
             font-size: 2.2em;
             margin-bottom: 15px;
-            color: #1a1a1a;
-            line-height: 1.4;
+            color: #0f766e;
+            line-height: 1.35;
+            font-weight: 800;
         }
         .meta {
             font-size: 0.9em;
-            color: #666;
+            color: #64748b;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid #f1f5f9;
         }
-        p { margin-bottom: 18px; text-align: justify; }
+        p { margin-bottom: 22px; text-align: justify; font-size: 1.05em; color: #334155; }
         h2 {
             font-size: 1.6em;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            color: #2c3e50;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #115e59;
+            border-bottom: 2px solid #ccfbf1;
+            padding-bottom: 8px;
+            font-weight: 700;
         }
-        strong { color: #d63384; font-weight: 600; }
+        strong { color: #10b981; font-weight: 700; }
+        ul { margin-left: 20px; margin-bottom: 22px; }
+        li { margin-bottom: 10px; font-size: 1.05em; color: #334155; }
+        
+        .recommend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .recommend-card {
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 16px;
+            background-color: #f8fafc;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+        .recommend-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+            border-color: #10b981;
+        }
+        @media (max-width: 600px) {
+            .recommend-grid {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                margin: 15px auto;
+                padding: 20px;
+                border-radius: 16px;
+            }
+            h1 {
+                font-size: 1.7em;
+            }
+            h2 {
+                font-size: 1.3em;
+            }
+        }
     </style>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
      crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="container">
+            <header style="padding: 10px 0 20px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <a href="/" style="font-size: 1.3em; font-weight: bold; color: #10b981; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                    <span>Clover Study</span> <span style="font-size: 1.1em;">🍀</span>
+                </a>
+                <a href="/blog" style="font-size: 0.85em; color: #059669; font-weight: 600; text-decoration: none; padding: 8px 16px; background-color: #ecfdf5; border-radius: 12px; border: 1px solid #a7f3d0; transition: background-color 0.2s;">
+                    📚 학습자료 목록
+                </a>
+            </header>
         <article>
             <h1>혼자보다 함께 - 효과적인 그룹 스터디 운영하는 방법</h1>
             <div class="meta">
@@ -52,9 +117,15 @@
 
             <p>이 글에서는 그룹 스터디의 이점을 설명하고, 실제로 효과적인 그룹 스터디를 운영하는 방법을 상세히 소개하겠습니다. 이 지침을 따르면 당신의 그룹 스터디가 진정한 학습 도구가 될 것입니다.</p>
 
-            <h2>그룹 스터디의 네 가지 주요 장점</h2>
+                        <div style="margin: 30px 0; text-align: center;">
+                <img src="/static/images/blog_room_natural.png" alt="Clover의 실제 공부 및 필기 기록" style="max-width: 100%; height: auto; border-radius: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1); border: 1px solid #e2e8f0; object-fit: cover; max-height: 400px; width: 100%;">
+                <p style="font-size: 0.85em; color: #64748b; margin-top: 10px; font-style: italic;">▲ Clover Study 필자가 직접 기록하며 공부하는 책상과 필기 노트</p>
+            </div>
+<h2>그룹 스터디의 네 가지 주요 장점</h2>
 
             <p><strong>첫째, 다양한 관점을 얻을 수 있습니다.</strong> 같은 문제를 다른 학생들이 어떻게 접근하는지 보면서 새로운 풀이법을 배울 수 있습니다. 자신이 생각하지 못한 방법들을 발견하게 되고, 이는 창의적 사고력을 향상시킵니다.</p>
+<div style="margin: 18px 0; padding: 12px 16px; background-color: #f0fdf4; border-left: 4px solid #10b981; font-size: 0.95em; border-radius: 0 12px 12px 0;">📌 <strong>연관 가이드:</strong> 스터디 메이트들과 함께 서로 격려하며 긍정적인 공부 자극과 동기를 끌어올리는 구체적인 방법은 <a href="/blog/7" style="color: #059669; font-weight: 600; text-decoration: underline;">공부 동기 관리 전략</a>을 추천합니다.</div>
+
 
             <p><strong>둘째, 설명하는 과정에서 더 깊이 있게 이해합니다.</strong> 남에게 어떤 개념을 설명하려면 그 개념을 완전히 이해하고 있어야 합니다. 설명하다 보면 자신의 이해 부족한 부분이 드러나고, 이를 통해 학습이 심화됩니다.</p>
 
@@ -76,10 +147,37 @@
 
             <p><strong>여섯째, 모르는 것을 물어보기 쉬운 분위기를 만드세요.</strong> "이런 건 왜 물어봐?"하는 비난적 분위기가 있으면 사람들은 질문을 하지 않습니다. 모든 질문을 환영하고 격려하는 분위기 속에서 깊이 있는 토론이 일어납니다.</p>
 
-            <h2>마무리 - 그룹 스터디의 힘</h2>
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-left: 5px solid #10b981; padding: 25px; border-radius: 16px; margin: 40px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                <h3 style="color: #065f46; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.25em;">
+                    <span style="font-size: 1.3em;">💡</span> Clover's Insight (주관적 견해)
+                </h3>
+                <p style="margin: 0; color: #1f2937; font-size: 0.98em; line-height: 1.7; text-align: justify; font-weight: 500;">
+                    친한 단짝 친구들과 독서실이나 도서관에서 같이 공부하는 스터디 그룹은 결국 십중팔구 잡담이나 놀러 가는 분위기로 흘렀습니다. 그래서 저는 일부러 약간 어색하지만 공부 열정이 넘치는 다른 반 친구들과 모여 스터디를 꾸렸고, 모이자마자 각자 공부할 책을 펼치고 50분 집중 후 10분 동안 질문을 한두 개씩 나누는 엄격한 타임 아웃 규칙을 정했습니다. 스터디는 친목이 아닌 효율적인 협업이어야 효과가 있습니다.
+                </p>
+            </div>
+<h2>마무리 - 그룹 스터디의 힘</h2>
 
             <p>그룹 스터디는 올바르게 운영되면 개인 학습보다 훨씬 효과적입니다. 다양한 관점, 깊이 있는 이해, 지속적인 동기 부여, 그리고 관계의 소중함까지 얻을 수 있습니다. 지금 바로 스터디 그룹을 만들거나 참여해보세요. 당신의 학습 경험이 완전히 바뀔 것입니다.</p>
-        </article>
+                    <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid #e2e8f0;">
+                <h3 style="font-size: 1.3em; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                    <span>📚</span> 함께 읽으면 성적이 오르는 추천 칼럼
+                </h3>
+                <div class="recommend-grid">
+                    <a href="/blog/7" class="recommend-card">
+                        <h4 style="margin: 0 0 8px 0; color: #0f766e; font-size: 1.05em; font-weight: bold; text-decoration: none;">공부 동기가 떨어졌을 때</h4>
+                        <p style="margin: 0; font-size: 0.85em; color: #64748b; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-decoration: none;">동기를 되찾는 7가지 방법으로 다시 시작하세요.</p>
+                    </a>
+                    <a href="/blog/2" class="recommend-card">
+                        <h4 style="margin: 0 0 8px 0; color: #0f766e; font-size: 1.05em; font-weight: bold; text-decoration: none;">집중력이 흐르는 공부 환경 만드는 법</h4>
+                        <p style="margin: 0; font-size: 0.85em; color: #64748b; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-decoration: none;">과학적으로 증명된 5가지 환경 조성 방법을 실천해보세요.</p>
+                    </a>
+                </div>
+            </div>
+            <footer style="margin-top: 60px; padding: 30px 0; border-top: 1px solid #eee; text-align: center; font-size: 0.85em; color: #94a3b8;">
+                <p style="margin-bottom: 8px;">🍀 Clover Study - 공스타 대신 클터디!</p>
+                <p style="margin: 0;">이 콘텐츠는 Clover Study의 소중한 자산입니다. 무단 전재 및 재배포를 금지합니다.</p>
+            </footer>
+</article>
     </div>
 </body>
 </html>

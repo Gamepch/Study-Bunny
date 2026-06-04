@@ -13,45 +13,108 @@
     <meta property="og:image" content="{{ url_for('static', filename='og-image.png') }}">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://cloverstudy.net/blog/adsense_content_01">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.8;
-            color: #333;
-            background-color: #f9f9f9;
+            font-family: 'Gowun Dodum', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.85;
+            color: #334155;
+            background-color: #f0fff4;
+            background-image: radial-gradient(#e6ffa2 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; background-color: white; }
-        article { padding: 40px 20px; }
+        .container { 
+            max-width: 800px; 
+            margin: 40px auto; 
+            padding: 40px; 
+            background-color: white; 
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05);
+            border: 1px solid #e6ffa2;
+        }
+        article { padding: 0; }
         h1 { 
             font-size: 2.2em;
             margin-bottom: 15px;
-            color: #1a1a1a;
-            line-height: 1.4;
+            color: #0f766e;
+            line-height: 1.35;
+            font-weight: 800;
         }
         .meta {
             font-size: 0.9em;
-            color: #666;
+            color: #64748b;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid #f1f5f9;
         }
-        p { margin-bottom: 18px; text-align: justify; }
+        p { margin-bottom: 22px; text-align: justify; font-size: 1.05em; color: #334155; }
         h2 {
             font-size: 1.6em;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            color: #2c3e50;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #115e59;
+            border-bottom: 2px solid #ccfbf1;
+            padding-bottom: 8px;
+            font-weight: 700;
         }
-        strong { color: #d63384; font-weight: 600; }
-        ul { margin-left: 20px; margin-bottom: 18px; }
-        li { margin-bottom: 10px; }
+        strong { color: #10b981; font-weight: 700; }
+        ul { margin-left: 20px; margin-bottom: 22px; }
+        li { margin-bottom: 10px; font-size: 1.05em; color: #334155; }
+        
+        .recommend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .recommend-card {
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 16px;
+            background-color: #f8fafc;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+        .recommend-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+            border-color: #10b981;
+        }
+        @media (max-width: 600px) {
+            .recommend-grid {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                margin: 15px auto;
+                padding: 20px;
+                border-radius: 16px;
+            }
+            h1 {
+                font-size: 1.7em;
+            }
+            h2 {
+                font-size: 1.3em;
+            }
+        }
     </style>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
      crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="container">
+            <header style="padding: 10px 0 20px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <a href="/" style="font-size: 1.3em; font-weight: bold; color: #10b981; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                    <span>Clover Study</span> <span style="font-size: 1.1em;">🍀</span>
+                </a>
+                <a href="/blog" style="font-size: 0.85em; color: #059669; font-weight: 600; text-decoration: none; padding: 8px 16px; background-color: #ecfdf5; border-radius: 12px; border: 1px solid #a7f3d0; transition: background-color 0.2s;">
+                    📚 학습자료 목록
+                </a>
+            </header>
         <article>
             <h1>효과적인 공부 계획을 세우는 5가지 방법 - 성공하는 학생들의 비결</h1>
             <div class="meta">
@@ -62,9 +125,15 @@
 
             <p>많은 학생들이 단순히 책을 펼치고 공부합니다. 특별한 목표 없이 시작한 공부는 효율성이 떨어질 수밖에 없습니다. 대학 입시에서 성공한 학생들, 자격증 시험에 합격한 사람들을 보면 모두가 공통적으로 명확한 계획을 세우고 그것을 실행했습니다. 이 글에서는 효과적인 공부 계획을 세우는 5가지 방법을 소개하겠습니다.</p>
 
-            <h2>1. 명확한 목표를 설정하세요</h2>
+                        <div style="margin: 30px 0; text-align: center;">
+                <img src="/static/images/blog_exam_prep.png" alt="Clover의 실제 공부 및 필기 기록" style="max-width: 100%; height: auto; border-radius: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1); border: 1px solid #e2e8f0; object-fit: cover; max-height: 400px; width: 100%;">
+                <p style="font-size: 0.85em; color: #64748b; margin-top: 10px; font-style: italic;">▲ Clover Study 필자가 직접 기록하며 공부하는 책상과 필기 노트</p>
+            </div>
+<h2>1. 명확한 목표를 설정하세요</h2>
 
             <p>첫 번째이자 가장 중요한 단계는 <strong>명확한 목표를 설정</strong>하는 것입니다. "수학을 잘하고 싶다"는 막연한 목표보다는 "이번 달 안에 미적분 단원을 완료하고 모의고사에서 80점 이상을 받자"는 구체적인 목표가 중요합니다.</p>
+<div style="margin: 18px 0; padding: 12px 16px; background-color: #f0fdf4; border-left: 4px solid #10b981; font-size: 0.95em; border-radius: 0 12px 12px 0;">📌 <strong>연관 가이드:</strong> 일상 속에서 이러한 계획을 공부 습관으로 정착시키는 구체적인 노하우가 궁금하다면 <a href="/blog/10" style="color: #059669; font-weight: 600; text-decoration: underline;">공부 습관 30일 프로젝트</a>를 함께 읽어보세요.</div>
+
 
             <p>목표가 명확해야 하는 이유는 여러 가지입니다. 첫째, 명확한 목표는 당신의 행동을 명확하게 만듭니다. 어디로 가야 하는지 알면 길을 잃지 않습니다. 둘째, 목표 달성 여부를 측정할 수 있습니다. 모호한 목표는 달성했는지 안 했는지 판단하기 어렵지만, 구체적인 목표는 명확합니다. 셋째, 동기 부여가 됩니다. 달성 가능한 구체적인 목표가 있을 때 더욱 집중하고 노력하게 됩니다.</p>
 
@@ -92,10 +161,37 @@
 
             <p>예를 들어, "이번 주에 영어 문법 완료"라는 목표를 세웠는데 완료하지 못했다면, 그 이유가 무엇인지 생각해봐야 합니다. 너무 어려워서인지, 시간을 충분히 들이지 못했는지, 아니면 계획 자체가 비현실적이었는지 등을 파악하고 다음 주 계획에 반영하세요.</p>
 
-            <h2>마무리</h2>
+                        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-left: 5px solid #10b981; padding: 25px; border-radius: 16px; margin: 40px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                <h3 style="color: #065f46; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1.25em;">
+                    <span style="font-size: 1.3em;">💡</span> Clover's Insight (주관적 견해)
+                </h3>
+                <p style="margin: 0; color: #1f2937; font-size: 0.98em; line-height: 1.7; text-align: justify; font-weight: 500;">
+                    제가 실제로 공부할 때, 10분 단위로 빼곡하게 세우는 스터디 플래너는 오히려 큰 스트레스였고 지속하기가 힘들었습니다. 그보다는 매일 아침 오늘 반드시 끝내야 할 핵심 과제 To-Do 리스트 3~4가지를 정하고, 시간 기준이 아닌 '공부량' 기준으로 계획을 분배했더니 훨씬 성취감도 높고 계획을 끝까지 지키기 쉬웠습니다. 계획은 완벽함보다는 '지속 가능한 유연성'이 핵심입니다.
+                </p>
+            </div>
+<h2>마무리</h2>
 
             <p>효과적인 공부 계획은 성공의 절반입니다. 이 5가지 방법을 따라 자신만의 공부 계획을 세워보세요. 처음에는 시간이 걸릴 수 있지만, 한 번 체계적인 계획의 효과를 경험하면 공부가 훨씬 즐거워질 것입니다. 오늘 바로 당신의 공부 계획을 세우기 시작하세요. 당신의 미래는 지금의 계획에 달려 있습니다.</p>
-        </article>
+                    <div style="margin-top: 50px; padding-top: 30px; border-top: 1px solid #e2e8f0;">
+                <h3 style="font-size: 1.3em; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                    <span>📚</span> 함께 읽으면 성적이 오르는 추천 칼럼
+                </h3>
+                <div class="recommend-grid">
+                    <a href="/blog/10" class="recommend-card">
+                        <h4 style="margin: 0 0 8px 0; color: #0f766e; font-size: 1.05em; font-weight: bold; text-decoration: none;">공부 습관이 인생을 바꾼다</h4>
+                        <p style="margin: 0; font-size: 0.85em; color: #64748b; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-decoration: none;">30일 안에 공부 습관을 형성하는 체계적인 방법을 소개합니다.</p>
+                    </a>
+                    <a href="/blog/11" class="recommend-card">
+                        <h4 style="margin: 0 0 8px 0; color: #0f766e; font-size: 1.05em; font-weight: bold; text-decoration: none;">전교 1등은 알고 있는 '내가 모르는 것'의 비밀</h4>
+                        <p style="margin: 0; font-size: 0.85em; color: #64748b; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-decoration: none;">메타인지 능력을 기르는 3가지 방법으로 착각적 인지를 깨부수고 공부 효율을 극대화해보세요.</p>
+                    </a>
+                </div>
+            </div>
+            <footer style="margin-top: 60px; padding: 30px 0; border-top: 1px solid #eee; text-align: center; font-size: 0.85em; color: #94a3b8;">
+                <p style="margin-bottom: 8px;">🍀 Clover Study - 공스타 대신 클터디!</p>
+                <p style="margin: 0;">이 콘텐츠는 Clover Study의 소중한 자산입니다. 무단 전재 및 재배포를 금지합니다.</p>
+            </footer>
+</article>
     </div>
 </body>
 </html>
