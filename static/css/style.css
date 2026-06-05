@@ -362,6 +362,13 @@
 .fab-main-btn:hover { background: #10b981; }
 .fab-main-btn.open { transform: rotate(45deg); }
 
+@media (max-width: 560px) {
+    .fab-menu-popup,
+    .fab-main-btn {
+        right: 16px;
+    }
+}
+
 /* ===== EMPTY STATE ===== */
 .empty-state {
     text-align: center;

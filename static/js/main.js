@@ -319,7 +319,7 @@ function closeWriteModal() {
     if (modal) modal.classList.add('hidden');
 }
 
-/**
+/**\
  * 하위 호환: 기존 toggleWriteModal() 참조를 유지
  */
 function toggleWriteModal() {
@@ -526,7 +526,7 @@ function renderAuthZone(isLoggedIn) {
             <div class="flex items-center space-x-2">
                 ${typeof notificationBellButtonHtml === 'function' ? notificationBellButtonHtml() : ''}
                 <button onclick="location.href='/mypage?user=${encodeURIComponent(currentUser.username)}'" class="text-xs bg-emerald-100 text-emerald-500 px-3 py-1.5 rounded-xl font-bold hover:bg-emerald-200 transition-all">
-                    마이페이지 🍀
+                    마이페이지
                 </button>
                 <button onclick="handleLogout()" class="text-xs bg-gray-100 text-gray-500 px-3 py-1.5 rounded-xl font-bold hover:bg-gray-200 transition-all">
                     로그아웃
