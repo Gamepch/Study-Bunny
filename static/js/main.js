@@ -245,8 +245,7 @@ function openWriteModal(type) {
     closeFabMenu();
 
     if (!currentUser) {
-        alert('글을 작성하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        location.href = '/login';
         return;
     }
 
@@ -429,8 +428,7 @@ function clearDraft() {
 
 function submitPost() {
     if (!currentUser) {
-        alert('글을 작성하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        location.href = '/login';
         return;
     }
 
