@@ -41,6 +41,88 @@ function updateOfflineBanner() {
     }
 }
 
+let deferredInstallPrompt = null;
+const INSTALL_PROMPT_STORAGE_KEY = 'installPromptHideUntil';
+const INSTALL_PROMPT_HIDE_MS = 24 * 60 * 60 * 1000;
+
+function isAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || navigator.userAgent.includes('StandAlone');
+}
+
+function shouldShowInstallPrompt() {
+    if (isAppInstalled()) return false;
+    const hideUntil = localStorage.getItem(INSTALL_PROMPT_STORAGE_KEY);
+    if (!hideUntil) return true;
+    return Date.now() > Number(hideUntil);
+}
+
+function hideInstallPrompt() {
+    const prompt = document.getElementById('install-prompt');
+    if (prompt) {
+        prompt.style.display = 'none';
+    }
+}
+
+function setInstallPromptHideUntilTomorrow() {
+    localStorage.setItem(INSTALL_PROMPT_STORAGE_KEY, String(Date.now() + INSTALL_PROMPT_HIDE_MS));
+    hideInstallPrompt();
+}
+
+function handleInstallButtonClick() {
+    const promptEvent = deferredInstallPrompt;
+    if (!promptEvent) {
+        hideInstallPrompt();
+        return;
+    }
+
+    promptEvent.prompt();
+    promptEvent.userChoice.then(choiceResult => {
+        deferredInstallPrompt = null;
+        hideInstallPrompt();
+    }).catch(() => {
+        hideInstallPrompt();
+    });
+}
+
+function createInstallPrompt() {
+    if (document.getElementById('install-prompt') || !shouldShowInstallPrompt()) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'install-prompt';
+    wrapper.className = 'install-prompt';
+    wrapper.innerHTML = `
+        <div class="install-prompt-card">
+            <button type="button" class="close-btn" aria-label="닫기">&times;</button>
+            <div class="install-prompt-text">
+                <strong>클로버 스터디를 앱으로 설치해보세요</strong>
+                <p>앱으로 들어오면 더 빠르게 이용할 수 있어요. 오늘 하루 보지 않기를 누르면 다시 보지 않습니다.</p>
+            </div>
+            <div class="install-prompt-actions">
+                <button type="button" class="install-btn">앱 설치</button>
+                <button type="button" class="dismiss-btn">오늘 하루 보지 않기</button>
+            </div>
+        </div>`;
+
+    document.body.appendChild(wrapper);
+
+    wrapper.querySelector('.install-btn').addEventListener('click', handleInstallButtonClick);
+    wrapper.querySelector('.dismiss-btn').addEventListener('click', setInstallPromptHideUntilTomorrow);
+    wrapper.querySelector('.close-btn').addEventListener('click', hideInstallPrompt);
+}
+
+window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    if (shouldShowInstallPrompt()) {
+        createInstallPrompt();
+    }
+});
+
+window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    hideInstallPrompt();
+});
+
 window.addEventListener('online', updateOfflineBanner);
 window.addEventListener('offline', updateOfflineBanner);
 
@@ -60,6 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadFormComponent();
+
+    if (deferredInstallPrompt && shouldShowInstallPrompt()) {
+        createInstallPrompt();
+    }
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -160,7 +246,7 @@ function renderCertFeeds(feeds) {
         container.innerHTML += `
             <div class="cert-card" onclick="location.href='/post/${feed.id}'">
                 <div class="cert-card-header">
-                    <img src="${feed.profile_url || '/static/logo2.png'}"
+                    <img src="${feed.profile_url || 'https://placehold.co/100x100/6ee7b7/ffffff?text=🍀'}"
                         alt="프로필" class="cert-card-avatar">
                     <span class="cert-card-nickname">${escapeHtml(feed.nickname || '클로버')}</span>
                 </div>
