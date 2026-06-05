@@ -160,7 +160,7 @@ function renderCertFeeds(feeds) {
         container.innerHTML += `
             <div class="cert-card" onclick="location.href='/post/${feed.id}'">
                 <div class="cert-card-header">
-                    <img src="${feed.profile_url || 'https://placehold.co/100x100/6ee7b7/ffffff?text=🍀'}"
+                    <img src="${feed.profile_url || '/static/logo2.png'}"
                         alt="프로필" class="cert-card-avatar">
                     <span class="cert-card-nickname">${escapeHtml(feed.nickname || '클로버')}</span>
                 </div>
