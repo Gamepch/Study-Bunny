@@ -369,6 +369,28 @@
     }
 }
 
+.offline-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90%, 420px);
+    padding: 16px 18px;
+    background: #fef3f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    border-radius: 20px;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+    z-index: 9999;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+}
+
+.offline-banner.hidden {
+    display: none;
+}
+
 /* ===== EMPTY STATE ===== */
 .empty-state {
     text-align: center;

@@ -19,9 +19,35 @@ function registerServiceWorker() {
             .catch((error) => console.warn('Service Worker registration failed:', error));
     }
 }
+
+function createOfflineBanner() {
+    const existing = document.getElementById('offline-banner');
+    if (existing) return existing;
+
+    const banner = document.createElement('div');
+    banner.id = 'offline-banner';
+    banner.className = 'offline-banner hidden';
+    banner.innerText = '인터넷 연결이 없어 사이트 이용이 어렵습니다. 연결 상태를 확인한 후 다시 시도해주세요.';
+    document.body.appendChild(banner);
+    return banner;
+}
+
+function updateOfflineBanner() {
+    const banner = createOfflineBanner();
+    if (navigator.onLine) {
+        banner.classList.add('hidden');
+    } else {
+        banner.classList.remove('hidden');
+    }
+}
+
+window.addEventListener('online', updateOfflineBanner);
+window.addEventListener('offline', updateOfflineBanner);
+
 // ─── DOMContentLoaded ────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     registerServiceWorker();
+    updateOfflineBanner();
     checkLoginStatus();
     if (typeof initNotifications === 'function') initNotifications();
 
