@@ -1,0 +1,20 @@
+{
+  "name": "Clover Study",
+  "short_name": "Clover",
+  "description": "공스타 대신 클로버 스터디! 공부 기록 공유와 커뮤니티를 중심으로 한 웹앱입니다.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F0FFF4",
+  "theme_color": "#10B981",
+  "icons": [
+    {
+      "src": "/static/favicon.ico",
+      "sizes": "48x48 72x72 96x96 128x128 256x256",
+      "type": "image/x-icon"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "prefer_related_applications": false
+}

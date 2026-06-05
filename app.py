@@ -86,8 +86,17 @@ def dated_url_for(endpoint, **values):
 
 # Configure upload directory
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True) 
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# PWA 파일 경로
+@app.route('/manifest.json')
+def manifest():
+    return send_file(os.path.join(app.static_folder, 'manifest.json'), mimetype='application/json')
+
+@app.route('/service-worker.js')
+def service_worker():
+    return send_file(os.path.join(app.static_folder, 'service-worker.js'), mimetype='application/javascript')
 
 DB_FILENAME = os.path.join(BASE_DIR, 'study_bunny.db')
 

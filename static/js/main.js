@@ -12,9 +12,16 @@ let currentCommunityFilter = '전체';    // 커뮤니티 필터 칩 상태
 let currentUser = null;
 let currentAuthMode = 'login';          // 'login' | 'signup'
 let fabOpen = false;
-
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(() => console.log('Service Worker registered.'))
+            .catch((error) => console.warn('Service Worker registration failed:', error));
+    }
+}
 // ─── DOMContentLoaded ────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    registerServiceWorker();
     checkLoginStatus();
     if (typeof initNotifications === 'function') initNotifications();
 
