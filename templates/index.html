@@ -116,7 +116,7 @@
                             <span>❤️ {{ feed.likes or 0 }}</span>
                             <span>💬 {{ feed.comment_count or 0 }}</span>
                         </div>
-                        <p class="cert-card-preview">{{ feed.content }}</p>
+                        <p class="cert-card-preview">{{ feed.title or feed.content }}</p>
                     </div>
                 </div>
                 {% endfor %}
