@@ -7,6 +7,7 @@ from PIL import Image
 from flask import Flask, render_template, jsonify, request, Response, send_file, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import pytz
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from dotenv import load_dotenv
@@ -116,6 +117,11 @@ def optimize_image_file(file_storage, filename, max_size=(800, 800), quality=80)
 
 def make_webp_filename(prefix='image'):
     return f"{prefix}_{uuid.uuid4().hex}.webp"
+
+def get_korean_time():
+    """한국 시간(KST)을 반환"""
+    korea_tz = pytz.timezone('Asia/Seoul')
+    return datetime.now(korea_tz)
 
 # PWA 파일 경로
 @app.route('/manifest.json')
@@ -296,7 +302,7 @@ def create_notification(conn, recipient_username, actor_username, actor_nickname
         post_title,
         comment_id,
         message,
-        datetime.now().strftime("%Y.%m.%d %H:%M"),
+        get_korean_time().strftime("%Y.%m.%d %H:%M"),
     ))
 
 with app.app_context():
@@ -352,7 +358,7 @@ def create_feed():
             if optimized_path:
                 image_url = f"/static/uploads/{filename}"
 
-    date_str = datetime.now().strftime("%Y.%m.%d %H:%M")
+    date_str = get_korean_time().strftime("%Y.%m.%d %H:%M")
     conn = get_db_connection()
     conn.execute('''
         INSERT INTO posts (category, username, nickname, profile_url, title, content, date, image_url, views, likes)
@@ -452,7 +458,7 @@ def add_comment(post_id):
     cursor = conn.execute('''
         INSERT INTO comments (post_id, username, nickname, profile_url, content, date)
         VALUES (?, ?, ?, ?, ?, ?)
-    ''', (post_id, username, user['nickname'], user['profile_url'], data.get('content'), datetime.now().strftime("%Y.%m.%d %H:%M")))
+    ''', (post_id, username, user['nickname'], user['profile_url'], data.get('content'), get_korean_time().strftime("%Y.%m.%d %H:%M")))
     comment_id = cursor.lastrowid
 
     create_notification(
@@ -495,7 +501,7 @@ def like_post(post_id):
     actor_nickname = liker['nickname'] if liker else username
 
     conn.execute('INSERT INTO post_likes (post_id, username, date) VALUES (?, ?, ?)',
-                 (post_id, username, datetime.now().strftime("%Y.%m.%d %H:%M")))
+                 (post_id, username, get_korean_time().strftime("%Y.%m.%d %H:%M")))
 
     create_notification(
         conn,
@@ -616,7 +622,7 @@ def update_comment(comment_id):
         return jsonify({"message": "fail", "reason": "작성자만 댓글을 수정할 수 있습니다."}), 403
 
     conn.execute('UPDATE comments SET content = ?, date = ? WHERE id = ?',
-                 (content, datetime.now().strftime("%Y.%m.%d %H:%M"), comment_id))
+                 (content, get_korean_time().strftime("%Y.%m.%d %H:%M"), comment_id))
     conn.commit()
     conn.close()
     return jsonify({"message": "success"}), 200
@@ -1261,7 +1267,7 @@ def create_report():
             (reporter_username, target_type, target_id, post_id, target_username, reason, description, created_at, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
         ''', (reporter_username, target_type, target_id, post_id, target_username, reason, description, 
-              datetime.now().strftime("%Y.%m.%d %H:%M:%S")))
+              get_korean_time().strftime("%Y.%m.%d %H:%M:%S")))
         conn.commit()
         conn.close()
         return jsonify({"message": "success"}), 200
@@ -1522,7 +1528,7 @@ def complete_google_signup():
             nickname,
             profile_url,
             'google',
-            datetime.now().strftime("%Y.%m.%d %H:%M:%S")
+            get_korean_time().strftime("%Y.%m.%d %H:%M:%S")
         ))
         conn.commit()
         conn.close()
