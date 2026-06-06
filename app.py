@@ -1464,7 +1464,7 @@ def complete_google_signup():
     google_id = temp_info.get('google_id')
     email = temp_info.get('email')
     
-    data = request.get_json()
+    data = request.form
     username = data.get('username')
     password = data.get('password')
     nickname = data.get('nickname', '새로운 클로버')
@@ -1488,7 +1488,25 @@ def complete_google_signup():
     # 비밀번호 해싱
     hashed_password = generate_password_hash(password)
     
+    # 프로필 이미지 처리
     profile_url = "https://placehold.co/100x100/6ee7b7/ffffff?text=Clover"
+    
+    if 'profile_image' in request.files:
+        file = request.files['profile_image']
+        if file and file.filename:
+            # 파일 크기 확인
+            file.seek(0, os.SEEK_END)
+            file_size = file.tell()
+            file.seek(0)
+            
+            if file_size <= 5 * 1024 * 1024:  # 5MB 이하
+                # 이미지 최적화 및 저장
+                filename = make_webp_filename('profile')
+                optimized_path = optimize_image_file(file, filename, PROFILE_IMAGE_MAX_SIZE, DEFAULT_IMAGE_QUALITY)
+                
+                if optimized_path:
+                    # URL 경로로 변환 (DB에 저장할 경로)
+                    profile_url = f"/static/uploads/{os.path.basename(optimized_path)}"
     
     try:
         conn.execute('''

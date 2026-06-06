@@ -77,6 +77,24 @@
                         <div id="password-check" class="text-xs mt-1 hidden"></div>
                     </div>
 
+                    <!-- 프로필 이미지 -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">프로필 이미지 (선택사항)</label>
+                        <div class="flex items-center gap-6">
+                            <div class="relative mr-2">
+                                <img id="profile-preview" src="https://placehold.co/100x100/6ee7b7/ffffff?text=Clover" alt="프로필 미리보기" class="w-20 h-20 rounded-full object-cover border-2 border-emerald-200">
+                                <input type="file" id="profile-image" accept="image/*" class="hidden">
+                            </div>
+                            <div class="flex-1">
+                                <button type="button" id="profile-image-btn" class="w-full px-4 py-2 border-2 border-emerald-200 rounded-xl text-sm font-bold text-gray-700 hover:bg-emerald-50 transition-colors">
+                                    이미지 선택
+                                </button>
+                                <p class="text-xs text-gray-600 mt-2">JPG, PNG, GIF (최대 5MB)</p>
+                                <p id="image-error" class="text-xs text-red-500 mt-1 hidden"></p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 닉네임 -->
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">닉네임</label>
@@ -123,6 +141,54 @@
             }
             document.getElementById('email').value = email;
             document.getElementById('email-display').textContent = email;
+        });
+
+        // 프로필 이미지 업로드 핸들러
+        document.getElementById('profile-image-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('profile-image').click();
+        });
+
+        document.getElementById('profile-image').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const errorDiv = document.getElementById('image-error');
+            const preview = document.getElementById('profile-preview');
+
+            if (!file) {
+                errorDiv.classList.add('hidden');
+                return;
+            }
+
+            // 파일 크기 체크 (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                errorDiv.textContent = '파일 크기가 5MB를 초과합니다.';
+                errorDiv.classList.remove('hidden');
+                e.target.value = '';
+                return;
+            }
+
+            // 파일 타입 체크
+            if (!file.type.startsWith('image/')) {
+                errorDiv.textContent = '이미지 파일만 선택 가능합니다.';
+                errorDiv.classList.remove('hidden');
+                e.target.value = '';
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+
+            // 이미지 미리보기
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                preview.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 프로필 이미지 미리보기 클릭으로 이미지 선택
+        document.getElementById('profile-preview').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('profile-image').click();
         });
 
         // 아이디 유효성 검사
@@ -243,22 +309,27 @@
             }
             
             const nickname = document.getElementById('nickname').value.trim() || '새로운 클로버';
+            const profileImageFile = document.getElementById('profile-image').files[0];
             
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
             submitBtn.textContent = '가입 중...';
             
             try {
+                // FormData를 사용하여 파일 포함
+                const formData = new FormData();
+                formData.append('username', username);
+                formData.append('password', password);
+                formData.append('nickname', nickname);
+                
+                if (profileImageFile) {
+                    formData.append('profile_image', profileImageFile);
+                }
+                
                 const response = await fetch('/auth/google/complete-signup', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username: username,
-                        password: password,
-                        nickname: nickname
-                    })
+                    body: formData
+                    // Content-Type을 설정하지 않음 (브라우저가 자동으로 설정)
                 });
                 
                 const data = await response.json();
