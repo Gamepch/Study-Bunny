@@ -19,9 +19,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://cloverstudy.net/post/{{ post_id }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <link rel="preload" href="{{ url_for('static', filename='fonts/GowunDodum.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
      crossorigin="anonymous"></script>
@@ -131,8 +129,8 @@
         const POST_ID = {{ post_id }};
         window.__POST_DATA__ = {{ post|tojson }};
     </script>
-    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/post.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/post.js') }}"></script>
 
 <!-- Report Modal -->
 <div id="report-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-30 flex justify-center items-center p-4">

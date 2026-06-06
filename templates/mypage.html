@@ -16,9 +16,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://cloverstudy.net/mypage">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <link rel="preload" href="{{ url_for('static', filename='fonts/GowunDodum.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .mypage-tab-active {
@@ -307,8 +305,8 @@
     </div>
 
     {% include '_notifications.html' %}
-    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/mypage.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/mypage.js') }}"></script>
 </body>
 
 </html>
