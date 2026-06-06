@@ -49,7 +49,7 @@
 
             <div class="flex justify-between items-center border-b border-emerald-50 pb-4 mb-6">
                 <div class="flex items-center">
-                    <img src="{{ post.profile_url }}" alt="프로필" class="w-10 h-10 rounded-full object-cover border border-emerald-100">
+                    <img src="{{ post.profile_url }}" alt="프로필" class="w-10 h-10 rounded-full object-cover border border-emerald-100" width="40" height="40">
                     <div class="ml-3">
                         <a href="/mypage?user={{ post.username }}" class="font-bold text-gray-700 text-sm hover:text-emerald-500 hover:underline">{{ post.nickname }}</a>
                         <div class="text-xs text-gray-400 mt-0.5">{{ post.date }} · 조회 {{ post.views }}</div>

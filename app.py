@@ -3,6 +3,7 @@ import uuid
 import sqlite3
 import json
 import requests
+from PIL import Image
 from flask import Flask, render_template, jsonify, request, Response, send_file, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -88,6 +89,33 @@ def dated_url_for(endpoint, **values):
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# 이미지 업로드 최적화 설정
+DEFAULT_IMAGE_QUALITY = 80
+POST_IMAGE_MAX_SIZE = (800, 800)
+PROFILE_IMAGE_MAX_SIZE = (128, 128)
+
+
+def optimize_image_file(file_storage, filename, max_size=(800, 800), quality=80):
+    """Save an uploaded image as optimized WebP and resize it to the given max_size."""
+    try:
+        file_storage.stream.seek(0)
+        image = Image.open(file_storage.stream)
+    except Exception:
+        return None
+
+    if image.mode not in ('RGB', 'RGBA'):
+        image = image.convert('RGB')
+
+    image.thumbnail(max_size, Image.LANCZOS)
+
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    image.save(output_path, format='WEBP', quality=quality, optimize=True)
+    return output_path
+
+
+def make_webp_filename(prefix='image'):
+    return f"{prefix}_{uuid.uuid4().hex}.webp"
 
 # PWA 파일 경로
 @app.route('/manifest.json')
@@ -319,11 +347,10 @@ def create_feed():
     if 'image' in request.files:
         file = request.files['image']
         if file.filename != '':
-            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else 'jpg'
-            filename = f"{uuid.uuid4().hex}.{ext}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            image_url = f"/static/uploads/{filename}"
+            filename = make_webp_filename('post')
+            optimized_path = optimize_image_file(file, filename, max_size=POST_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
+            if optimized_path:
+                image_url = f"/static/uploads/{filename}"
 
     date_str = datetime.now().strftime("%Y.%m.%d %H:%M")
     conn = get_db_connection()
@@ -1076,11 +1103,10 @@ def update_profile():
     if 'profile_image' in request.files:
         file = request.files['profile_image']
         if file.filename != '':
-            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else 'jpg'
-            filename = f"profile_{uuid.uuid4().hex}.{ext}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            new_profile_url = f"/static/uploads/{filename}"
+            filename = make_webp_filename('profile')
+            optimized_path = optimize_image_file(file, filename, max_size=PROFILE_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
+            if optimized_path:
+                new_profile_url = f"/static/uploads/{filename}"
 
     conn.execute('UPDATE users SET nickname = ?, profile_url = ? WHERE username = ?',
                  (new_nickname, new_profile_url, username))
@@ -1123,11 +1149,10 @@ def signup():
     if 'profile_image' in request.files:
         file = request.files['profile_image']
         if file.filename != '':
-            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else 'jpg'
-            filename = f"profile_{uuid.uuid4().hex}.{ext}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            profile_url = f"/static/uploads/{filename}"
+            filename = make_webp_filename('profile')
+            optimized_path = optimize_image_file(file, filename, max_size=PROFILE_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
+            if optimized_path:
+                profile_url = f"/static/uploads/{filename}"
     
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
