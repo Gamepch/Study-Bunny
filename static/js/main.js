@@ -12,6 +12,7 @@ let currentCommunityFilter = '전체';    // 커뮤니티 필터 칩 상태
 let currentUser = null;
 let currentAuthMode = 'login';          // 'login' | 'signup'
 let fabOpen = false;
+let lastScreenSize = window.innerWidth <= 400 ? 'mobile' : 'desktop';
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js')
@@ -146,6 +147,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (deferredInstallPrompt && shouldShowInstallPrompt()) {
         createInstallPrompt();
     }
+
+    // 창 크기 변경 시 auth-zone 리렌더링 (400px 기준)
+    // 실제 경계(400px)를 넘을 때만 리렌더링 (불필요한 API 요청 줄임)
+    window.addEventListener('resize', () => {
+        if (!currentUser) return;
+        const currentSize = window.innerWidth <= 400 ? 'mobile' : 'desktop';
+        if (currentSize !== lastScreenSize) {
+            lastScreenSize = currentSize;
+            renderAuthZone(true);
+        }
+    });
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -634,15 +646,29 @@ function renderAuthZone(isLoggedIn) {
     if (!authZone) return;
 
     if (isLoggedIn && currentUser) {
+        const isMobile = window.innerWidth <= 400;
         authZone.innerHTML = `
             <div class="flex items-center space-x-2">
                 ${typeof notificationBellButtonHtml === 'function' ? notificationBellButtonHtml() : ''}
-                <button onclick="location.href='/mypage?user=${encodeURIComponent(currentUser.username)}'" class="text-xs bg-emerald-100 text-emerald-500 px-3 py-1.5 rounded-xl font-bold hover:bg-emerald-200 transition-all">
-                    마이페이지
-                </button>
-                <button onclick="handleLogout()" class="text-xs bg-gray-100 text-gray-500 px-3 py-1.5 rounded-xl font-bold hover:bg-gray-200 transition-all">
-                    로그아웃
-                </button>
+                ${isMobile ? `
+                    <button onclick="location.href='/mypage?user=${encodeURIComponent(currentUser.username)}'" class="p-2 rounded-xl text-emerald-500 hover:bg-emerald-50 transition-colors" title="마이페이지">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </button>
+                    <button onclick="handleLogout()" class="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors" title="로그아웃">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
+                ` : `
+                    <button onclick="location.href='/mypage?user=${encodeURIComponent(currentUser.username)}'" class="text-xs bg-emerald-100 text-emerald-500 px-3 py-1.5 rounded-xl font-bold hover:bg-emerald-200 transition-all">
+                        마이페이지
+                    </button>
+                    <button onclick="handleLogout()" class="text-xs bg-gray-100 text-gray-500 px-3 py-1.5 rounded-xl font-bold hover:bg-gray-200 transition-all">
+                        로그아웃
+                    </button>
+                `}
             </div>`;
         if (typeof refreshNotificationBadge === 'function') refreshNotificationBadge();
     } else {
