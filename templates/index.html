@@ -3,8 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clover Study 🍀</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="manifest" href="{{ url_for('manifest') }}">
@@ -25,9 +24,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://cloverstudy.net/">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <link rel="preload" href="{{ url_for('static', filename='fonts/GowunDodum.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
         crossorigin="anonymous"></script>
@@ -40,13 +37,14 @@
         <!-- ===== HEADER ===== -->
         <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
             <div>
-                <h1 class="text-xl font-bold text-emerald-400 cursor-pointer" onclick="location.href='/'">Clover Study
-                </h1>
-                <p class="text-xs text-gray-400">클로버 스터디</p>
+                <h1 class="text-xl font-bold text-emerald-600 cursor-pointer" onclick="location.href='/'" >Clover Study
+                    </h1>
+                <p class="text-xs text-gray-600">클로버 스터디</p>
             </div>
             <div id="auth-zone" class="flex items-center"></div>
         </header>
 
+        <main>
         <!-- ===== MAIN TAB BAR ===== -->
         <div class="main-tab-bar">
             <button id="main-tab-cert" class="main-tab-btn active" onclick="switchMainTab('certification')">
@@ -60,13 +58,13 @@
         <!-- ===== SEARCH BAR ===== -->
         <div class="px-4 mt-3">
             <div class="relative flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 text-gray-400" fill="none"
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-4 text-gray-600" fill="none"
                     viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input type="text" id="search-input" oninput="handleSearch()" placeholder="제목이나 내용으로 검색해보세요..."
-                    class="w-full pl-12 pr-4 py-3 bg-white/80 border border-emerald-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:bg-white placeholder:text-gray-400 font-medium shadow-sm transition-all">
+                    class="w-full pl-12 pr-4 py-3 bg-white/80 border border-emerald-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:bg-white placeholder:text-gray-600 font-medium shadow-sm transition-all">
             </div>
         </div>
 
@@ -75,7 +73,7 @@
             <div class="feed-ad-card p-4 bg-white border border-emerald-100 rounded-3xl shadow-sm">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-[11px] font-bold text-emerald-500 uppercase tracking-[0.18em]">광고</span>
-                    <span class="text-[11px] text-gray-400">AdSense</span>
+                    <span class="text-[11px] text-gray-600">AdSense</span>
                 </div>
                 <script async
                     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
@@ -101,12 +99,12 @@
                 <div class="cert-card" onclick="location.href='/post/{{ feed.id }}'">
                     <div class="cert-card-header">
                         <img src="{{ feed.profile_url or 'https://placehold.co/100x100/6ee7b7/ffffff?text=🍀' }}"
-                            alt="프로필" class="cert-card-avatar">
+                            alt="프로필" class="cert-card-avatar" width="24" height="24">
                         <span class="cert-card-nickname">{{ feed.nickname }}</span>
                     </div>
                     <div class="cert-card-image-wrap">
                         {% if feed.image_url %}
-                        <img src="{{ feed.image_url }}" alt="공부 인증 이미지" loading="lazy">
+                        <img src="{{ feed.image_url }}" alt="공부 인증 이미지" loading="lazy" width="324" height="324" class="w-full h-full object-cover">
                         {% else %}
                         <div class="cert-card-no-image">
                             <span>📚</span>
@@ -196,7 +194,7 @@
                         새 공부 인증 <span class="ml-2 text-2xl">📸</span>
                     </h2>
                     <button onclick="closeWriteModal()"
-                        class="text-gray-400 hover:text-emerald-500 transition-colors bg-gray-50 rounded-full p-2">
+                        class="text-gray-600 hover:text-emerald-500 transition-colors bg-gray-50 rounded-full p-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -222,14 +220,14 @@
             <div
                 class="bg-white rounded-[2rem] p-6 w-full max-w-[480px] shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
                 <header class="pb-4 border-b border-emerald-50 flex justify-between items-center">
-                    <button onclick="closeDetailModal()" class="text-emerald-400 p-2 hover:bg-emerald-50 rounded-full">
+                    <button onclick="closeDetailModal()" class="text-emerald-600 p-2 hover:bg-emerald-50 rounded-full">
                         닫기
                     </button>
                     <div class="flex space-x-2">
                         <button id="detail-edit-btn"
-                            class="text-gray-400 hover:text-emerald-400 text-sm font-medium">수정</button>
+                            class="text-gray-600 hover:text-emerald-600 text-sm font-medium">수정</button>
                         <button id="detail-delete-btn"
-                            class="text-gray-400 hover:text-red-400 text-sm font-medium">삭제</button>
+                            class="text-gray-600 hover:text-red-500 text-sm font-medium">삭제</button>
                     </div>
                 </header>
                 <div id="detail-content-area" class="mt-4">
@@ -255,9 +253,9 @@
 
                 <div class="flex justify-center space-x-6 mb-6 text-lg font-bold border-b border-gray-100 pb-2">
                     <button id="tab-login" onclick="switchAuthTab('login')"
-                        class="text-emerald-400 border-b-2 border-emerald-400 pb-2 px-2">로그인</button>
+                        class="text-emerald-600 border-b-2 border-emerald-600 pb-2 px-2">로그인</button>
                     <button id="tab-signup" onclick="switchAuthTab('signup')"
-                        class="text-gray-400 pb-2 px-2">회원가입</button>
+                        class="text-gray-600 pb-2 px-2">회원가입</button>
                 </div>
 
                 <div class="space-y-4">
@@ -287,8 +285,7 @@
                 </button>
             </div>
         </div>
-
-    </div><!-- /max-w-[480px] -->
+        </main>    </div><!-- /max-w-[480px] -->
 
     <!-- ===== FAB MENU ===== -->
     <!-- 오버레이 (배경 클릭 시 닫힘) -->
