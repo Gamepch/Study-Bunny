@@ -55,7 +55,7 @@
     <div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-10">
         
         <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
-            <button onclick="history.back()" class="text-emerald-400 hover:text-emerald-600 transition-colors p-2 flex items-center">
+            <button onclick="history.back()" class="text-emerald-600 hover:text-emerald-700 transition-colors p-2 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
@@ -92,7 +92,7 @@
             <div id="users-section" class="block">
                 <h3 class="text-sm font-bold text-gray-700 mb-4">👥 가입한 사용자 목록</h3>
                 <div id="users-container" class="space-y-3">
-                    <div class="text-center py-8 text-gray-400">
+                    <div class="text-center py-8 text-gray-600">
                         <span class="text-2xl block mb-2">⏳</span>
                         사용자 목록을 불러오고 있습니다...
                     </div>
@@ -102,7 +102,7 @@
             <div id="reports-section" style="display: none;" class="block">
                 <h3 class="text-sm font-bold text-gray-700 mb-4">🚨 신고 목록</h3>
                 <div id="reports-container" class="space-y-3">
-                    <div class="text-center py-8 text-gray-400">
+                    <div class="text-center py-8 text-gray-600">
                         <span class="text-2xl block mb-2">⏳</span>
                         신고 목록을 불러오고 있습니다...
                     </div>
@@ -264,7 +264,7 @@
                             <p class="font-bold text-gray-800 truncate">${user.nickname}</p>
                             ${user.username === 'admin' ? '<span class="px-2 py-1 bg-red-50 text-red-500 text-[10px] font-bold rounded-full">👑 관리자</span>' : ''}
                         </div>
-                        <p class="text-xs text-gray-400 truncate">@${user.username}</p>
+                        <p class="text-xs text-gray-600 truncate">@${user.username}</p>
                     </div>
                 </div>
             `).join('');
@@ -279,7 +279,7 @@
 
             if (reports.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-8 text-gray-400">
+                    <div class="text-center py-8 text-gray-600">
                         <span class="text-2xl block mb-2">✅</span>
                         처리할 신고가 없습니다.
                     </div>
@@ -304,7 +304,7 @@
                                 </div>
                             ` : ''}
                             ${report.description ? `<p class="text-xs text-gray-600 mt-2 italic">추가 설명: ${report.description}</p>` : ''}
-                            <p class="text-xs text-gray-400 mt-2">${report.created_at}</p>
+                            <p class="text-xs text-gray-600 mt-2">${report.created_at}</p>
                         </div>
                         <div class="flex gap-2 flex-shrink-0" onclick="event.stopPropagation();">
                             <button onclick="resolveReport(${report.id})" class="px-3 py-1 bg-green-50 text-green-600 text-xs font-bold rounded-lg hover:bg-green-100 transition">

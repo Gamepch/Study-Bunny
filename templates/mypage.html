@@ -66,7 +66,7 @@
 
         <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
             <button onclick="history.back()"
-                class="text-emerald-400 hover:text-emerald-600 transition-colors p-2 flex items-center">
+                class="text-emerald-600 hover:text-emerald-700 transition-colors p-2 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -91,20 +91,20 @@
                     <h2 id="profile-nickname" class="text-xl font-bold text-gray-800 truncate">{% if page_data %}{{
                         page_data.user.nickname }}{% elif target_username %}{{ target_username }}{% else %}&nbsp;{%
                         endif %}</h2>
-                    <p id="profile-username" class="text-xs text-gray-400 mt-1 truncate">{% if page_data %}@{{
+                    <p id="profile-username" class="text-xs text-gray-600 mt-1 truncate">{% if page_data %}@{{
                         page_data.user.username }}{% elif target_username %}@{{ target_username }}{% else %}&nbsp;{%
                         endif %}</p>
                     <div class="flex items-center mt-3 space-x-4">
                         <div class="text-center">
                             <span id="stat-posts" class="text-lg font-bold text-emerald-500">{% if page_data %}{{
                                 page_data.my_posts|length }}{% else %}0{% endif %}</span>
-                            <p class="text-[10px] text-gray-400 mt-0.5">작성한 글</p>
+                            <p class="text-[10px] text-gray-600 mt-0.5">작성한 글</p>
                         </div>
                         <div class="w-px h-8 bg-emerald-100"></div>
                         <div class="text-center">
                             <span id="stat-likes" class="text-lg font-bold text-emerald-500">{% if page_data %}—{% else
                                 %}0{% endif %}</span>
-                            <p class="text-[10px] text-gray-400 mt-0.5">좋아요 한 글</p>
+                            <p class="text-[10px] text-gray-600 mt-0.5">좋아요 한 글</p>
                         </div>
                     </div>
                 </div>
@@ -206,7 +206,7 @@
                         <span class="text-emerald-500 text-xs ml-1">[{{ post.comment_count or 0 }}]</span>
                     </h2>
                     <p class="text-xs text-gray-500 mb-2 truncate">{{ post.content }}</p>
-                    <div class="flex items-center text-[11px] text-gray-400 space-x-2">
+                    <div class="flex items-center text-[11px] text-gray-600 space-x-2">
                         <div class="flex items-center">
                             <img src="{{ post.profile_url or 'https://placehold.co/100x100/ffb6c1/ffffff?text=Me' }}"
                                 alt="프로필" class="w-4 h-4 rounded-full mr-1 object-cover" loading="lazy"
@@ -232,7 +232,7 @@
             </div>
             {% endfor %}
             {% else %}
-            <div class="text-center py-12 text-gray-400 text-xs font-medium">
+            <div class="text-center py-12 text-gray-600 text-xs font-medium">
                 <span class="text-2xl block mb-2">🍀</span>
                 아직 작성한 글이 없어요.<br>첫 번째 공부 기록을 남겨보세요!
             </div>
@@ -252,7 +252,7 @@
 
         <div class="px-4 py-4 border-t border-emerald-50" style="display: none;">
             <button onclick="deleteAccount()"
-                class="w-full py-2 bg-gray-50 text-gray-400 rounded-2xl text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-100 active:scale-[0.98]">
+                class="w-full py-2 bg-gray-50 text-gray-600 rounded-2xl text-xs font-bold hover:bg-gray-100 transition-colors border border-gray-100 active:scale-[0.98]">
                 회원탈퇴
             </button>
         </div>
@@ -263,7 +263,7 @@
         class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
         <div class="bg-white rounded-[2rem] p-6 w-full max-w-[400px] shadow-2xl flex flex-col relative">
 
-            <button onclick="closeProfileEditModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-600">
+            <button onclick="closeProfileEditModal()" class="absolute top-5 right-5 text-gray-600 hover:text-gray-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -290,7 +290,7 @@
                     <input type="file" id="profile-image-input" class="hidden" accept="image/*"
                         onchange="previewProfileImage(event)">
                 </div>
-                <p class="text-xs text-gray-400 mt-2">사진을 클릭하면 변경할 수 있어요</p>
+                <p class="text-xs text-gray-600 mt-2">사진을 클릭하면 변경할 수 있어요</p>
             </div>
 
             <div class="space-y-2">

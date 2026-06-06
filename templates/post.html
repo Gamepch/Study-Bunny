@@ -31,16 +31,16 @@
     <div class="max-w-[480px] mx-auto bg-white min-h-screen shadow-xl relative pb-10">
         
         <header class="p-4 bg-emerald-50/80 backdrop-blur-md sticky top-0 z-10 border-b border-emerald-100 flex justify-between items-center">
-            <button onclick="history.back()" class="text-emerald-400 hover:text-emerald-600 transition-colors p-2">
+            <button onclick="history.back()" class="text-emerald-600 hover:text-emerald-700 transition-colors p-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
             </button>
             <div class="flex items-center space-x-1">
                 <div id="auth-zone" class="flex items-center"></div>
-                <button id="edit-button" style="display: none;" class="text-gray-400 hover:text-emerald-400 transition-colors px-2 py-1 text-sm font-medium">수정</button>
-                <button id="delete-button" onclick="deletePost(POST_ID)" style="display: none;" class="text-gray-400 hover:text-red-400 transition-colors px-2 py-1 text-sm font-medium">삭제</button>
-                <button id="report-button" onclick="reportPost(POST_ID)" class="text-gray-400 hover:text-orange-400 transition-colors px-2 py-1 text-sm font-medium">신고</button>
+                <button id="edit-button" style="display: none;" class="text-gray-600 hover:text-emerald-600 transition-colors px-2 py-1 text-sm font-medium">수정</button>
+                <button id="delete-button" onclick="deletePost(POST_ID)" style="display: none;" class="text-gray-600 hover:text-red-500 transition-colors px-2 py-1 text-sm font-medium">삭제</button>
+                <button id="report-button" onclick="reportPost(POST_ID)" class="text-gray-600 hover:text-orange-500 transition-colors px-2 py-1 text-sm font-medium">신고</button>
             </div>
         </header>
         
@@ -52,7 +52,7 @@
                     <img src="{{ post.profile_url }}" alt="프로필" class="w-10 h-10 rounded-full object-cover border border-emerald-100" width="40" height="40">
                     <div class="ml-3">
                         <a href="/mypage?user={{ post.username }}" class="font-bold text-gray-700 text-sm hover:text-emerald-500 hover:underline">{{ post.nickname }}</a>
-                        <div class="text-xs text-gray-400 mt-0.5">{{ post.date }} · 조회 {{ post.views }}</div>
+                        <div class="text-xs text-gray-600 mt-0.5">{{ post.date }} · 조회 {{ post.views }}</div>
                     </div>
                 </div>
             </div>
@@ -68,13 +68,13 @@
             {% endif %}
 
             <div class="mt-8 pt-4 flex space-x-4 border-t border-emerald-50">
-                <button id="like-btn" onclick="likePost({{ post.id }})" class="flex items-center text-emerald-400 hover:text-emerald-600 font-medium transition-all duration-200">
+                <button id="like-btn" onclick="likePost({{ post.id }})" class="flex items-center text-emerald-600 hover:text-emerald-700 font-medium transition-all duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                     좋아요 <span id="like-count" class="ml-1">{{ post.likes }}</span>
                 </button>
-                <div class="flex items-center text-gray-400 font-medium">
+                <div class="flex items-center text-gray-600 font-medium">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
@@ -99,14 +99,14 @@
                                         <div>
                                             <a href="/mypage?user={{ comment.username }}" class="font-bold text-gray-700 text-xs hover:text-emerald-500 hover:underline">{{ comment.nickname }}</a>
                                         </div>
-                                        <span class="text-[10px] text-gray-400">{{ comment.date }}</span>
+                                        <span class="text-[10px] text-gray-600">{{ comment.date }}</span>
                                     </div>
                                     <p class="text-sm text-gray-600 break-all">{{ comment.content }}</p>
                                 </div>
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="text-center text-xs text-gray-400 py-4">아직 댓글이 없어요. 첫 댓글을 남겨보세요! 🍀</div>
+                        <div class="text-center text-xs text-gray-600 py-4">아직 댓글이 없어요. 첫 댓글을 남겨보세요! 🍀</div>
                     {% endif %}
                 </div>
             </div>
@@ -139,7 +139,7 @@
     <div class="bg-white rounded-[2rem] p-6 w-full max-w-[600px] shadow-2xl max-h-[90vh] overflow-y-auto flex flex-col">
         <div class="flex justify-between items-center mb-6 flex-shrink-0">
             <h2 class="text-2xl font-bold text-gray-800">신고하기 🚨</h2>
-            <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-600 transition-colors bg-gray-50 rounded-full p-2 flex-shrink-0">
+            <button onclick="closeReportModal()" class="text-gray-600 hover:text-gray-700 transition-colors bg-gray-50 rounded-full p-2 flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -189,7 +189,7 @@
             <h2 class="text-2xl font-bold text-gray-800 flex items-center">
                 기록 수정하기 <span class="ml-2 text-2xl">🛠️</span>
             </h2>
-            <button onclick="toggleEditModal()" class="text-gray-400 hover:text-emerald-500 transition-colors bg-gray-50 rounded-full p-2">
+            <button onclick="toggleEditModal()" class="text-gray-600 hover:text-emerald-600 transition-colors bg-gray-50 rounded-full p-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
