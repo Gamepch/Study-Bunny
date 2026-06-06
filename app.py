@@ -832,26 +832,83 @@ def robots_txt():
 @app.route('/sitemap.xml')
 def sitemap_xml():
     """
-    Return a dynamic sitemap including static pages and posts.
+    Return a dynamic sitemap including static pages, blog pages, and posts.
     """
     conn = get_db_connection()
-    posts = conn.execute('SELECT id FROM posts').fetchall()
+    posts = conn.execute('SELECT id, date FROM posts').fetchall()
     conn.close()
 
+    base_url = request.url_root.rstrip('/')
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+
+    def format_lastmod(date_str):
+        try:
+            return datetime.strptime(date_str, '%Y.%m.%d %H:%M').strftime('%Y-%m-%d')
+        except Exception:
+            return today
+
     urls = [
-        f"{request.url_root.rstrip('/')}/",
-        f"{request.url_root.rstrip('/')}/about",
-        f"{request.url_root.rstrip('/')}/privacy",
-        f"{request.url_root.rstrip('/')}/terms",
-        f"{request.url_root.rstrip('/')}/contact"
+        {
+            'loc': f'{base_url}/',
+            'changefreq': 'daily',
+            'priority': '1.0',
+            'lastmod': today
+        },
+        {
+            'loc': f'{base_url}/about',
+            'changefreq': 'weekly',
+            'priority': '0.8',
+            'lastmod': today
+        },
+        {
+            'loc': f'{base_url}/privacy',
+            'changefreq': 'monthly',
+            'priority': '0.6',
+            'lastmod': today
+        },
+        {
+            'loc': f'{base_url}/terms',
+            'changefreq': 'monthly',
+            'priority': '0.6',
+            'lastmod': today
+        },
+        {
+            'loc': f'{base_url}/contact',
+            'changefreq': 'monthly',
+            'priority': '0.5',
+            'lastmod': today
+        },
+        {
+            'loc': f'{base_url}/blog',
+            'changefreq': 'weekly',
+            'priority': '0.8',
+            'lastmod': today
+        }
     ]
+
+    for article_id in range(1, 16):
+        urls.append({
+            'loc': f'{base_url}/blog/{article_id}',
+            'changefreq': 'monthly',
+            'priority': '0.7',
+            'lastmod': today
+        })
+
     for post in posts:
-        urls.append(f"{request.url_root.rstrip('/')}/post/{post['id']}")
+        urls.append({
+            'loc': f"{base_url}/post/{post['id']}",
+            'changefreq': 'weekly',
+            'priority': '0.7',
+            'lastmod': format_lastmod(post['date'])
+        })
 
     xml = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
-    for url in urls:
+    for item in urls:
         xml.append('  <url>')
-        xml.append(f'    <loc>{url}</loc>')
+        xml.append(f"    <loc>{item['loc']}</loc>")
+        xml.append(f"    <lastmod>{item['lastmod']}</lastmod>")
+        xml.append(f"    <changefreq>{item['changefreq']}</changefreq>")
+        xml.append(f"    <priority>{item['priority']}</priority>")
         xml.append('  </url>')
     xml.append('</urlset>')
 
