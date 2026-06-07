@@ -311,56 +311,6 @@
             </div>
         </div>
 
-        <!-- ===== AUTH MODAL ===== -->
-        <div id="auth-modal"
-            class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-            <div
-                class="bg-white rounded-[2rem] p-6 w-full max-w-[380px] shadow-2xl flex flex-col relative animate-fade-in">
-
-                <button onclick="closeAuthModal()"
-                    class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-emerald-100 hover:text-emerald-500 transition-all"
-                    title="닫기">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-
-                <div class="flex justify-center space-x-6 mb-6 text-lg font-bold border-b border-gray-100 pb-2">
-                    <button id="tab-login" onclick="switchAuthTab('login')"
-                        class="text-emerald-600 border-b-2 border-emerald-600 pb-2 px-2">로그인</button>
-                    <button id="tab-signup" onclick="switchAuthTab('signup')"
-                        class="text-gray-600 pb-2 px-2">회원가입</button>
-                </div>
-
-                <div class="space-y-4">
-                    <input type="text" id="auth-username" placeholder="아이디"
-                        class="w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                    <input type="password" id="auth-password" placeholder="비밀번호"
-                        class="w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
-
-                    <input type="text" id="auth-nickname" placeholder="사용할 닉네임 (클로버 이름)"
-                        class="hidden w-full p-3.5 text-[15px] border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
-
-                    <div id="profile-upload-container" class="hidden">
-                        <label class="block text-xs font-bold text-gray-600 mb-2">프로필 이미지 (선택사항)</label>
-                        <input type="file" id="auth-profile-image" accept="image/*"
-                            onchange="previewAuthProfileImage(event)"
-                            class="w-full p-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <div id="auth-profile-preview" class="hidden mt-3 flex justify-center">
-                            <img id="auth-profile-preview-img" src="" alt="프로필 미리보기"
-                                class="w-16 h-16 rounded-full object-cover border-2 border-emerald-200">
-                        </div>
-                    </div>
-                </div>
-
-                <button id="auth-submit-btn" onclick="handleAuthSubmit()"
-                    class="mt-6 w-full py-4 bg-emerald-400 text-white rounded-2xl font-bold hover:bg-emerald-500 active:scale-95 transition-all shadow-md shadow-emerald-200">
-                    로그인하기
-                </button>
-            </div>
-        </div>
         </main>
 
         <!-- ===== FOOTER ===== -->
