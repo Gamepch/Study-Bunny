@@ -143,10 +143,7 @@
         function loadUsers() {
             if (!checkAdminAccess()) return;
 
-            const user = localStorage.getItem('clover_study_user');
-            const userData = JSON.parse(user);
-
-            fetch('/api/admin/users?username=' + userData.username)
+            fetch('/api/admin/users')
                 .then(response => {
                     console.log('Response status:', response.status);
                     if (response.status === 403) {
@@ -183,10 +180,7 @@
         function loadReports() {
             if (!checkAdminAccess()) return;
 
-            const user = localStorage.getItem('clover_study_user');
-            const userData = JSON.parse(user);
-
-            fetch('/api/admin/reports?status=pending&username=' + userData.username)
+            fetch('/api/admin/reports?status=pending')
                 .then(response => {
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     return response.json();
@@ -342,16 +336,12 @@
 
         // Update report status
         function updateReportStatus(reportId, status) {
-            const user = localStorage.getItem('clover_study_user');
-            const userData = JSON.parse(user);
-
             fetch(`/api/admin/reports/${reportId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ 
-                    username: userData.username,
                     status: status 
                 })
             })

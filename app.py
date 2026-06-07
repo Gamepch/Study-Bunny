@@ -136,10 +136,54 @@ DB_FILENAME = os.path.join(BASE_DIR, 'study_bunny.db')
 
 def is_admin(username):
     """
-    Check if the user is an admin.
-    Admin account: username == 'admin'
+    Check if the user is an admin from database.
+    Safe server-side validation (not just username check).
     """
-    return username == 'admin'
+    if not username:
+        return False
+    try:
+        conn = get_db_connection()
+        user = conn.execute(
+            'SELECT username FROM users WHERE username = ? AND username = "admin"',
+            (username,)
+        ).fetchone()
+        conn.close()
+        return user is not None
+    except Exception as e:
+        print(f"Error in is_admin: {str(e)}")
+        return False
+
+def get_current_user():
+    """
+    Get authenticated user from session.
+    Returns username if user is logged in, None otherwise.
+    """
+    return session.get('username')
+
+def require_auth(f):
+    """
+    Decorator to require authentication.
+    """
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not get_current_user():
+            return jsonify({"message": "fail", "reason": "인증이 필요합니다."}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def require_admin(f):
+    """
+    Decorator to require admin privileges.
+    """
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        username = get_current_user()
+        if not username or not is_admin(username):
+            return jsonify({"message": "fail", "reason": "관리자 권한이 필요합니다."}), 403
+        return f(*args, **kwargs)
+    return decorated_function
 
 def get_db_connection():
     """
@@ -1004,17 +1048,12 @@ def signup_page():
 
 
 @app.route('/api/admin/users', methods=['GET'])
+@require_admin
 def get_all_users():
     """
     Get all registered users - admin only.
+    Server-side session 기반 권한 검증 (보안 강화)
     """
-    # Check admin permission
-    username = request.args.get('username')
-    if not username or not is_admin(username):
-        return jsonify({
-            "message": "fail",
-            "reason": "관리자 권한이 필요합니다."
-        }), 403
     
     try:
         conn = get_db_connection()
@@ -1335,17 +1374,12 @@ def create_report():
 
 
 @app.route('/api/admin/reports', methods=['GET'])
+@require_admin
 def get_reports():
     """
     Get all reports - admin only.
+    Server-side session 기반 권한 검증 (보안 강화)
     """
-    # Check admin permission
-    username = request.args.get('username')
-    if not username or not is_admin(username):
-        return jsonify({
-            "message": "fail",
-            "reason": "관리자 권한이 필요합니다."
-        }), 403
     
     status = request.args.get('status', 'pending')
     
@@ -1369,20 +1403,14 @@ def get_reports():
 
 
 @app.route('/api/admin/reports/<int:report_id>', methods=['PUT'])
+@require_admin
 def update_report_status(report_id):
     """
     Update report status - admin only.
+    Server-side session 기반 권한 검증 (보안 강화)
     """
     data = request.get_json() or {}
-    username = data.get('username')
     status = data.get('status')  # 'resolved', 'dismissed', etc.
-    
-    # Check admin permission
-    if not username or not is_admin(username):
-        return jsonify({
-            "message": "fail",
-            "reason": "관리자 권한이 필요합니다."
-        }), 403
     
     if not status:
         return jsonify({"message": "fail", "reason": "상태 정보가 필요합니다."}), 400
@@ -1399,6 +1427,7 @@ def update_report_status(report_id):
 def login():
     """
     Handle user login - 경로 A: username/password 로그인
+    Server-side session에 사용자 정보 저장 (보안 강화)
     """
     data = request.get_json()
     username = data.get('username')
@@ -1412,6 +1441,13 @@ def login():
     conn.close()
     
     if user and check_password_hash(user['password'], password):
+        # 로그인 성공: 세션에 사용자 정보 저장
+        session['username'] = user['username']
+        session['nickname'] = user['nickname']
+        session['profile_url'] = user['profile_url']
+        session['login_method'] = user['login_method']
+        session.permanent = False
+        
         return jsonify({
             "message": "success",
             "user": {
@@ -1478,6 +1514,13 @@ def google_auth_callback():
         
         if existing_user:
             # 경로 B: 기존 사용자 로그인 (비밀번호 입력 없음)
+            # 세션에 사용자 정보 저장 (보안 강화)
+            session['username'] = existing_user['username']
+            session['nickname'] = existing_user['nickname']
+            session['profile_url'] = existing_user['profile_url']
+            session['login_method'] = existing_user['login_method']
+            session.permanent = False
+            
             return jsonify({
                 "message": "success",
                 "action": "login",
@@ -1593,6 +1636,13 @@ def complete_google_signup():
         # 세션에서 임시 정보 삭제
         del session['temp_google_info']
         
+        # 회원가입 완료: 세션에 사용자 정보 저장 (보안 강화)
+        session['username'] = username
+        session['nickname'] = nickname
+        session['profile_url'] = profile_url
+        session['login_method'] = 'google'
+        session.permanent = False
+        
         return jsonify({
             "message": "success",
             "user": {
@@ -1608,6 +1658,51 @@ def complete_google_signup():
         conn.close()
         print(f"Error in complete_google_signup: {str(e)}")
         return jsonify({"message": "fail", "reason": "회원가입 중 오류가 발생했습니다."}), 500
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    """
+    Handle user logout - clear session.
+    """
+    username = get_current_user()
+    if username:
+        session.clear()
+        return jsonify({
+            "message": "success",
+            "reason": "로그아웃되었습니다."
+        }), 200
+    else:
+        return jsonify({
+            "message": "fail",
+            "reason": "인증되지 않은 사용자입니다."
+        }), 401
+
+@app.route('/api/auth/check', methods=['GET'])
+def check_auth():
+    """
+    Check if user is authenticated and get current user info.
+    """
+    username = get_current_user()
+    if username:
+        conn = get_db_connection()
+        user = conn.execute(
+            'SELECT username, nickname, profile_url FROM users WHERE username = ?',
+            (username,)
+        ).fetchone()
+        conn.close()
+        
+        if user:
+            return jsonify({
+                "authenticated": True,
+                "user": {
+                    "username": user['username'],
+                    "nickname": user['nickname'],
+                    "profile_url": user['profile_url'],
+                    "is_admin": is_admin(user['username'])
+                }
+            }), 200
+    
+    return jsonify({"authenticated": False}), 200
 
 @app.route('/ads.txt')
 def ads():
