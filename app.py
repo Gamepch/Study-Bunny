@@ -1,14 +1,12 @@
 import os
 import uuid
 import sqlite3
-import json
-import requests
 from functools import wraps
 from PIL import Image
 from flask import Flask, render_template, jsonify, request, Response, send_file, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-import pytz
+from zoneinfo import ZoneInfo
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from dotenv import load_dotenv
@@ -122,7 +120,7 @@ def make_webp_filename(prefix='image'):
 
 def get_korean_time():
     """한국 시간(KST)을 반환"""
-    korea_tz = pytz.timezone('Asia/Seoul')
+    korea_tz = ZoneInfo('Asia/Seoul')
     return datetime.now(korea_tz)
 
 # PWA 파일 경로
