@@ -142,6 +142,13 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchFeeds();
     }
 
+    // 뒤로가기 후 탭 상태 복원 (페인트는 인라인 CSS가 무플래시로 처리, 여기서 JS 상태·피드 동기화)
+    const savedTab = sessionStorage.getItem('lastMainTab');
+    if (savedTab === 'community') {
+        switchMainTab('community');
+        document.documentElement.removeAttribute('data-tab');
+    }
+
     loadFormComponent();
 
     if (deferredInstallPrompt && shouldShowInstallPrompt()) {
@@ -170,6 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function switchMainTab(tab) {
     currentTab = tab;
+    sessionStorage.setItem('lastMainTab', tab);
 
     const certBtn  = document.getElementById('main-tab-cert');
     const commBtn  = document.getElementById('main-tab-comm');

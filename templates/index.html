@@ -27,6 +27,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
         crossorigin="anonymous"></script>
+    <script>
+        if (sessionStorage.getItem('lastMainTab') === 'community') {
+            document.documentElement.setAttribute('data-tab', 'community');
+        }
+    </script>
+    <style>
+        html[data-tab="community"] #panel-certification { display: none; }
+        html[data-tab="community"] #panel-community { display: block; }
+        html[data-tab="community"] #main-tab-cert { background: transparent; color: #6b7280; box-shadow: none; }
+        html[data-tab="community"] #main-tab-comm { background: #34d399; color: #fff; box-shadow: 0 4px 12px rgba(52,211,153,0.32); }
+    </style>
 </head>
 
 <body class="bg-gradient-to-br from-[#F0FFF4] to-[#E6FFFA] min-h-screen">
