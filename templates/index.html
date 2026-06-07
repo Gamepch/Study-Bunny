@@ -55,6 +55,7 @@
             <div id="auth-zone" class="flex items-center"></div>
         </header>
 
+
         <main>
         <!-- ===== MAIN TAB BAR ===== -->
         <div class="main-tab-bar">
@@ -146,6 +147,26 @@
                     </div>
                 </div>
                 {% endfor %}
+                <!-- 카카오 애드핏 광고 카드 -->
+                <div class="cert-card cert-card--ad">
+                    <div class="cert-card-header">
+                        <img src="https://placehold.co/100x100/FEE500/3C1E1E?text=K" alt="카카오" class="cert-card-avatar" width="24" height="24">
+                        <span class="cert-card-nickname">카카오</span>
+                    </div>
+                    <div class="cert-card-image-wrap">
+                        <ins class="kakao_ad_area" style="display:none;"
+                            data-ad-unit="DAN-Ri1NZraiYGuwT4dg"
+                            data-ad-width="250"
+                            data-ad-height="250"></ins>
+                        <script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" async></script>
+                    </div>
+                    <div class="cert-card-footer">
+                        <div class="cert-card-stats">
+                            <span style="font-size:10px; color:#9ca3af; font-weight:700;">AD</span>
+                        </div>
+                        <p class="cert-card-preview">광고입니다.</p>
+                    </div>
+                </div>
                 {% else %}
                 <div class="empty-state" style="grid-column: 1 / -1;">
                     <span class="emoji">📸</span>
