@@ -3,6 +3,7 @@ import uuid
 import sqlite3
 import json
 import requests
+from functools import wraps
 from PIL import Image
 from flask import Flask, render_template, jsonify, request, Response, send_file, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -95,6 +96,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 DEFAULT_IMAGE_QUALITY = 80
 POST_IMAGE_MAX_SIZE = (800, 800)
 PROFILE_IMAGE_MAX_SIZE = (128, 128)
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 def optimize_image_file(file_storage, filename, max_size=(800, 800), quality=80):
@@ -135,23 +137,7 @@ def service_worker():
 DB_FILENAME = os.path.join(BASE_DIR, 'study_bunny.db')
 
 def is_admin(username):
-    """
-    Check if the user is an admin from database.
-    Safe server-side validation (not just username check).
-    """
-    if not username:
-        return False
-    try:
-        conn = get_db_connection()
-        user = conn.execute(
-            'SELECT username FROM users WHERE username = ? AND username = "admin"',
-            (username,)
-        ).fetchone()
-        conn.close()
-        return user is not None
-    except Exception as e:
-        print(f"Error in is_admin: {str(e)}")
-        return False
+    return bool(username) and username == 'admin'
 
 def get_current_user():
     """
@@ -164,7 +150,6 @@ def require_auth(f):
     """
     Decorator to require authentication.
     """
-    from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not get_current_user():
@@ -176,7 +161,6 @@ def require_admin(f):
     """
     Decorator to require admin privileges.
     """
-    from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
         username = get_current_user()
@@ -352,7 +336,7 @@ def create_notification(conn, recipient_username, actor_username, actor_nickname
 with app.app_context():
     init_db()
 
-def fetch_all_feeds():
+def fetch_all_feeds(limit=200, offset=0):
     conn = get_db_connection()
     feeds = conn.execute('''
         SELECT p.*, COUNT(c.id) AS comment_count
@@ -360,23 +344,30 @@ def fetch_all_feeds():
         LEFT JOIN comments c ON p.id = c.post_id
         GROUP BY p.id
         ORDER BY p.id DESC
-    ''').fetchall()
+        LIMIT ? OFFSET ?
+    ''', (limit, offset)).fetchall()
     conn.close()
     return [dict(feed) for feed in feeds]
 
 @app.route('/api/feeds')
 def get_feeds():
     """
-    Retrieve all posts with their comment counts.
+    Retrieve posts with comment counts. Supports ?page= and ?per_page= for pagination.
     """
-    return jsonify(fetch_all_feeds())
+    try:
+        per_page = min(int(request.args.get('per_page', 50)), 100)
+        page = max(int(request.args.get('page', 1)), 1)
+    except ValueError:
+        per_page, page = 50, 1
+    offset = (page - 1) * per_page
+    return jsonify(fetch_all_feeds(limit=per_page, offset=offset))
 
 @app.route('/api/feeds', methods=['POST'])
 def create_feed():
     """
     Create a new post.
     """
-    username = request.form.get('username')
+    username = get_current_user()
     if not username:
         return jsonify({"message": "fail", "reason": "로그인 후 글을 작성해주세요."}), 401
 
@@ -387,8 +378,6 @@ def create_feed():
 
     title = (request.form.get('title') or '').strip()
     content = (request.form.get('content') or '').strip()
-    nickname = (request.form.get('nickname') or '익명의 클로버').strip()
-    profile_url = request.form.get('profile_url', '')
     image_url = ''
 
     if not title or not content:
@@ -397,6 +386,10 @@ def create_feed():
     if 'image' in request.files:
         file = request.files['image']
         if file.filename != '':
+            file.seek(0, os.SEEK_END)
+            if file.tell() > MAX_UPLOAD_SIZE:
+                return jsonify({"message": "fail", "reason": "이미지 파일은 5MB 이하만 업로드 가능합니다."}), 400
+            file.seek(0)
             filename = make_webp_filename('post')
             optimized_path = optimize_image_file(file, filename, max_size=POST_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
             if optimized_path:
@@ -404,10 +397,15 @@ def create_feed():
 
     date_str = get_korean_time().strftime("%Y.%m.%d %H:%M")
     conn = get_db_connection()
+    user = conn.execute('SELECT nickname, profile_url FROM users WHERE username = ?', (username,)).fetchone()
+    if not user:
+        conn.close()
+        return jsonify({"message": "fail", "reason": "잘못된 사용자 정보입니다."}), 401
+
     conn.execute('''
         INSERT INTO posts (category, username, nickname, profile_url, title, content, date, image_url, views, likes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
-    ''', (category, username, nickname, profile_url, title, content, date_str, image_url))
+    ''', (category, username, user['nickname'], user['profile_url'], title, content, date_str, image_url))
     conn.commit()
     conn.close()
     return jsonify({"message": "success"}), 201
@@ -484,7 +482,7 @@ def add_comment(post_id):
     Add a comment to a specific post.
     """
     data = request.get_json() or {}
-    username = data.get('username')
+    username = get_current_user()
     if not username:
         return jsonify({"message": "fail", "reason": "로그인 후 댓글 작성이 가능합니다."}), 401
 
@@ -526,7 +524,7 @@ def like_post(post_id):
     Toggle like status for a specific post.
     """
     data = request.get_json() or {}
-    username = data.get('username')
+    username = get_current_user()
     if not username:
         return jsonify({"message": "fail", "reason": "로그인 후 좋아요 해주세요."}), 401
 
@@ -569,7 +567,7 @@ def delete_post(post_id):
     Delete a specific post and its associated comments.
     """
     data = request.get_json() or {}
-    username = data.get('username')
+    username = get_current_user()
     if not username:
         return jsonify({"message": "fail", "reason": "로그인 후 삭제할 수 있습니다."}), 401
 
@@ -595,8 +593,8 @@ def update_post(post_id):
     Update a specific post's details including category, title, content, and image.
     """
     conn = get_db_connection()
-    
-    username = request.form.get('username')
+
+    username = get_current_user()
     if not username:
         conn.close()
         return jsonify({"message": "fail", "reason": "로그인 후 수정할 수 있습니다."}), 401
@@ -627,6 +625,11 @@ def update_post(post_id):
     if 'image' in request.files:
         file = request.files['image']
         if file.filename != '':
+            file.seek(0, os.SEEK_END)
+            if file.tell() > MAX_UPLOAD_SIZE:
+                conn.close()
+                return jsonify({"message": "fail", "reason": "이미지 파일은 5MB 이하만 업로드 가능합니다."}), 400
+            file.seek(0)
             filename = make_webp_filename('post')
             optimized_path = optimize_image_file(file, filename, max_size=POST_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
             if optimized_path:
@@ -650,7 +653,7 @@ def update_comment(comment_id):
     Update a specific comment's content.
     """
     data = request.get_json() or {}
-    username = data.get('username')
+    username = get_current_user()
     content = data.get('content', '').strip()
     if not username or not content:
         return jsonify({"message": "fail", "reason": "댓글 내용을 입력하고 로그인해주세요."}), 400
@@ -676,7 +679,7 @@ def delete_comment(comment_id):
     Delete a specific comment.
     """
     data = request.get_json() or {}
-    username = data.get('username')
+    username = get_current_user()
     if not username:
         return jsonify({"message": "fail", "reason": "로그인 후 삭제할 수 있습니다."}), 401
 
@@ -722,147 +725,35 @@ def contact_page():
     """
     return render_template('contact.html')
 
+BLOG_ARTICLES = [
+    {'id': 1,  'title': '효과적인 공부 계획을 세우는 5가지 방법',                'subtitle': '공부를 잘하는 학생들의 공통점인 체계적인 공부 계획을 세우는 방법을 알아봅시다.',              'category': '공부 기법',  'file': 'adsense_content_01.html'},
+    {'id': 2,  'title': '집중력이 흐르는 공부 환경 만드는 법',                  'subtitle': '과학적으로 증명된 5가지 환경 조성 방법을 실천해보세요.',                                    'category': '공부 환경',  'file': 'adsense_content_02.html'},
+    {'id': 3,  'title': '잘 잊혀지지 않는 기억력',                             'subtitle': '신경과학 기반 공부 기법 3가지로 기억력을 향상시키세요.',                                      'category': '학습 기법',  'file': 'adsense_content_03.html'},
+    {'id': 4,  'title': '시험 불안감을 이겨내는 심리 전략',                     'subtitle': '시험 시즌을 슬기롭게 보내는 4가지 심리 전략을 배워봅시다.',                                   'category': '심리 관리',  'file': 'adsense_content_04.html'},
+    {'id': 5,  'title': '온라인 학습이 미래 교육이 되는 이유',                  'subtitle': '효율적인 온라인 공부법과 활용 전략을 소개합니다.',                                            'category': '온라인 교육', 'file': 'adsense_content_05.html'},
+    {'id': 6,  'title': '과목마다 다른 공부법',                                'subtitle': '수학, 과학, 국어 각 과목의 특성에 맞는 학습 방법을 배워봅시다.',                              'category': '학습 전략',  'file': 'adsense_content_06.html'},
+    {'id': 7,  'title': '공부 동기가 떨어졌을 때',                             'subtitle': '동기를 되찾는 7가지 방법으로 다시 시작하세요.',                                               'category': '동기 관리',  'file': 'adsense_content_07.html'},
+    {'id': 8,  'title': '독서가 공부 능력을 높이는 이유',                       'subtitle': '읽기 능력과 학력의 관계를 이해하고 독서 습관을 들이세요.',                                     'category': '독서와 학습', 'file': 'adsense_content_08.html'},
+    {'id': 9,  'title': '혼자보다 함께 - 효과적인 그룹 스터디 운영',            'subtitle': '협력 학습의 효과와 그룹 스터디 운영 방법을 배워봅시다.',                                      'category': '협력 학습',  'file': 'adsense_content_09.html'},
+    {'id': 10, 'title': '공부 습관이 인생을 바꾼다',                            'subtitle': '30일 안에 공부 습관을 형성하는 체계적인 방법을 소개합니다.',                                  'category': '습관 형성',  'file': 'adsense_content_10.html'},
+    {'id': 11, 'title': "전교 1등은 알고 있는 '내가 모르는 것'의 비밀",         'subtitle': '메타인지 능력을 기르는 3가지 방법으로 착각적 인지를 깨부수고 공부 효율을 극대화해보세요.',       'category': '학습 기법',  'file': 'adsense_content_11.html'},
+    {'id': 12, 'title': "공부할 때 스마트폰 유혹을 이기는 '디지털 디톡스'",     'subtitle': '집중력을 파괴하는 디지털 유혹의 과학적 원리와 의지력이 필요 없는 실전 차단 전략',              'category': '공부 환경',  'file': 'adsense_content_12.html'},
+    {'id': 13, 'title': "잠을 줄이면 성적이 떨어지는 이유",                     'subtitle': '뇌과학이 증명한 수면과 기억의 상관관계 및 학습 효율을 극대화하는 최적의 수면 전략',             'category': '피로 관리',  'file': 'adsense_content_13.html'},
+    {'id': 14, 'title': '공부 슬럼프와 번아웃을 극복하는 방법',                 'subtitle': '무기력에서 벗어나 시동을 거는 5분 규칙과 뇌과학 기반의 능동적 휴식 전략',                     'category': '심리 관리',  'file': 'adsense_content_14.html'},
+    {'id': 15, 'title': '시험 당일 포텐을 터뜨리는 실전 시뮬레이션',            'subtitle': '실력을 200% 발휘하는 마지막 필살기 및 3단계 시험지 운영 법칙',                               'category': '시험 실전',  'file': 'adsense_content_15.html'},
+]
+_BLOG_ARTICLE_MAP = {a['id']: a['file'] for a in BLOG_ARTICLES}
+
+
 @app.route('/blog')
 def blog_list():
-    """
-    Render the blog list page with all articles.
-    """
-    articles = [
-        {
-            'id': 1,
-            'title': '효과적인 공부 계획을 세우는 5가지 방법',
-            'subtitle': '공부를 잘하는 학생들의 공통점인 체계적인 공부 계획을 세우는 방법을 알아봅시다.',
-            'category': '공부 기법',
-            'file': 'adsense_content_01.html'
-        },
-        {
-            'id': 2,
-            'title': '집중력이 흐르는 공부 환경 만드는 법',
-            'subtitle': '과학적으로 증명된 5가지 환경 조성 방법을 실천해보세요.',
-            'category': '공부 환경',
-            'file': 'adsense_content_02.html'
-        },
-        {
-            'id': 3,
-            'title': '잘 잊혀지지 않는 기억력',
-            'subtitle': '신경과학 기반 공부 기법 3가지로 기억력을 향상시키세요.',
-            'category': '학습 기법',
-            'file': 'adsense_content_03.html'
-        },
-        {
-            'id': 4,
-            'title': '시험 불안감을 이겨내는 심리 전략',
-            'subtitle': '시험 시즌을 슬기롭게 보내는 4가지 심리 전략을 배워봅시다.',
-            'category': '심리 관리',
-            'file': 'adsense_content_04.html'
-        },
-        {
-            'id': 5,
-            'title': '온라인 학습이 미래 교육이 되는 이유',
-            'subtitle': '효율적인 온라인 공부법과 활용 전략을 소개합니다.',
-            'category': '온라인 교육',
-            'file': 'adsense_content_05.html'
-        },
-        {
-            'id': 6,
-            'title': '과목마다 다른 공부법',
-            'subtitle': '수학, 과학, 국어 각 과목의 특성에 맞는 학습 방법을 배워봅시다.',
-            'category': '학습 전략',
-            'file': 'adsense_content_06.html'
-        },
-        {
-            'id': 7,
-            'title': '공부 동기가 떨어졌을 때',
-            'subtitle': '동기를 되찾는 7가지 방법으로 다시 시작하세요.',
-            'category': '동기 관리',
-            'file': 'adsense_content_07.html'
-        },
-        {
-            'id': 8,
-            'title': '독서가 공부 능력을 높이는 이유',
-            'subtitle': '읽기 능력과 학력의 관계를 이해하고 독서 습관을 들이세요.',
-            'category': '독서와 학습',
-            'file': 'adsense_content_08.html'
-        },
-        {
-            'id': 9,
-            'title': '혼자보다 함께 - 효과적인 그룹 스터디 운영',
-            'subtitle': '협력 학습의 효과와 그룹 스터디 운영 방법을 배워봅시다.',
-            'category': '협력 학습',
-            'file': 'adsense_content_09.html'
-        },
-        {
-            'id': 10,
-            'title': '공부 습관이 인생을 바꾼다',
-            'subtitle': '30일 안에 공부 습관을 형성하는 체계적인 방법을 소개합니다.',
-            'category': '습관 형성',
-            'file': 'adsense_content_10.html'
-        },
-        {
-            'id': 11,
-            'title': "전교 1등은 알고 있는 '내가 모르는 것'의 비밀",
-            'subtitle': '메타인지 능력을 기르는 3가지 방법으로 착각적 인지를 깨부수고 공부 효율을 극대화해보세요.',
-            'category': '학습 기법',
-            'file': 'adsense_content_11.html'
-        },
-        {
-            'id': 12,
-            'title': "공부할 때 스마트폰 유혹을 이기는 '디지털 디톡스'",
-            'subtitle': '집중력을 파괴하는 디지털 유혹의 과학적 원리와 의지력이 필요 없는 실전 차단 전략',
-            'category': '공부 환경',
-            'file': 'adsense_content_12.html'
-        },
-        {
-            'id': 13,
-            'title': "잠을 줄이면 성적이 떨어지는 이유",
-            'subtitle': '뇌과학이 증명한 수면과 기억의 상관관계 및 학습 효율을 극대화하는 최적의 수면 전략',
-            'category': '피로 관리',
-            'file': 'adsense_content_13.html'
-        },
-        {
-            'id': 14,
-            'title': '공부 슬럼프와 번아웃을 극복하는 방법',
-            'subtitle': '무기력에서 벗어나 시동을 거는 5분 규칙과 뇌과학 기반의 능동적 휴식 전략',
-            'category': '심리 관리',
-            'file': 'adsense_content_14.html'
-        },
-        {
-            'id': 15,
-            'title': '시험 당일 포텐을 터뜨리는 실전 시뮬레이션',
-            'subtitle': '실력을 200% 발휘하는 마지막 필살기 및 3단계 시험지 운영 법칙',
-            'category': '시험 실전',
-            'file': 'adsense_content_15.html'
-        },
-    ]
-    return render_template('blog_list.html', articles=articles)
+    return render_template('blog_list.html', articles=BLOG_ARTICLES)
 
 @app.route('/blog/<int:article_id>')
 def blog_detail(article_id):
-    """
-    Render a detailed blog article page.
-    """
-    articles = {
-        1: 'adsense_content_01.html',
-        2: 'adsense_content_02.html',
-        3: 'adsense_content_03.html',
-        4: 'adsense_content_04.html',
-        5: 'adsense_content_05.html',
-        6: 'adsense_content_06.html',
-        7: 'adsense_content_07.html',
-        8: 'adsense_content_08.html',
-        9: 'adsense_content_09.html',
-        10: 'adsense_content_10.html',
-        11: 'adsense_content_11.html',
-        12: 'adsense_content_12.html',
-        13: 'adsense_content_13.html',
-        14: 'adsense_content_14.html',
-        15: 'adsense_content_15.html',
-    }
-    
-    if article_id not in articles:
+    if article_id not in _BLOG_ARTICLE_MAP:
         return '글을 찾을 수 없습니다', 404
-    
-    return render_template(f'blog/{articles[article_id]}', article_id=article_id)
+    return render_template(f'blog/{_BLOG_ARTICLE_MAP[article_id]}', article_id=article_id)
 
 @app.route('/robots.txt')
 def robots_txt():
@@ -1145,9 +1036,8 @@ def mark_notification_read(username, notification_id):
     """
     Mark a single notification as read.
     """
-    data = request.get_json() or {}
-    if data.get('username') != username:
-        return jsonify({"message": "fail", "reason": "잘못된 요청입니다."}), 400
+    if get_current_user() != username:
+        return jsonify({"message": "fail", "reason": "잘못된 요청입니다."}), 403
 
     conn = get_db_connection()
     conn.execute(
@@ -1168,9 +1058,8 @@ def mark_all_notifications_read(username):
     """
     Mark all notifications as read for a user.
     """
-    data = request.get_json() or {}
-    if data.get('username') != username:
-        return jsonify({"message": "fail", "reason": "잘못된 요청입니다."}), 400
+    if get_current_user() != username:
+        return jsonify({"message": "fail", "reason": "잘못된 요청입니다."}), 403
 
     conn = get_db_connection()
     conn.execute(
@@ -1188,7 +1077,7 @@ def update_profile():
     Update user nickname and/or profile image.
     Also cascades updates to all posts authored by the user.
     """
-    username = request.form.get('username')
+    username = get_current_user()
     if not username:
         return jsonify({"message": "fail", "reason": "로그인이 필요합니다."}), 401
 
@@ -1204,6 +1093,11 @@ def update_profile():
     if 'profile_image' in request.files:
         file = request.files['profile_image']
         if file.filename != '':
+            file.seek(0, os.SEEK_END)
+            if file.tell() > MAX_UPLOAD_SIZE:
+                conn.close()
+                return jsonify({"message": "fail", "reason": "이미지 파일은 5MB 이하만 업로드 가능합니다."}), 400
+            file.seek(0)
             filename = make_webp_filename('profile')
             optimized_path = optimize_image_file(file, filename, max_size=PROFILE_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
             if optimized_path:
@@ -1217,6 +1111,9 @@ def update_profile():
                  (new_nickname, new_profile_url, username))
     conn.commit()
     conn.close()
+
+    session['nickname'] = new_nickname
+    session['profile_url'] = new_profile_url
 
     return jsonify({
         "message": "success",
@@ -1250,11 +1147,15 @@ def signup():
     if 'profile_image' in request.files:
         file = request.files['profile_image']
         if file.filename != '':
+            file.seek(0, os.SEEK_END)
+            if file.tell() > MAX_UPLOAD_SIZE:
+                return jsonify({"message": "fail", "reason": "이미지 파일은 5MB 이하만 업로드 가능합니다."}), 400
+            file.seek(0)
             filename = make_webp_filename('profile')
             optimized_path = optimize_image_file(file, filename, max_size=PROFILE_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
             if optimized_path:
                 profile_url = f"/static/uploads/{filename}"
-    
+
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     if user:
@@ -1277,13 +1178,13 @@ def delete_account():
     Delete user account and all associated data.
     """
     data = request.get_json() or {}
-    username = data.get('username')
-    
+    username = get_current_user()
+
     if not username:
-        return jsonify({"message": "fail", "reason": "아이디가 필요합니다."}), 400
-    
+        return jsonify({"message": "fail", "reason": "로그인이 필요합니다."}), 401
+
     conn = get_db_connection()
-    
+
     # Check if user exists
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
     if not user:
@@ -1291,37 +1192,22 @@ def delete_account():
         return jsonify({"message": "fail", "reason": "존재하지 않는 사용자입니다."}), 404
     
     try:
-        # Delete user's posts and related data
-        posts = conn.execute('SELECT id FROM posts WHERE username = ?', (username,)).fetchall()
-        for post in posts:
-            post_id = post['id']
-            conn.execute('DELETE FROM comments WHERE post_id = ?', (post_id,))
-            conn.execute('DELETE FROM post_likes WHERE post_id = ?', (post_id,))
-            conn.execute('DELETE FROM notifications WHERE post_id = ?', (post_id,))
-        
+        # posts 삭제 시 ON DELETE CASCADE로 comments/post_likes/notifications/reports 자동 삭제
         conn.execute('DELETE FROM posts WHERE username = ?', (username,))
-        
-        # Delete user's comments
+        # 다른 사람 글에 단 댓글·좋아요, 수신/발신 알림도 삭제
         conn.execute('DELETE FROM comments WHERE username = ?', (username,))
-        
-        # Delete user's post_likes
         conn.execute('DELETE FROM post_likes WHERE username = ?', (username,))
-        
-        # Delete notifications related to user
         conn.execute('DELETE FROM notifications WHERE recipient_username = ? OR actor_username = ?', (username, username))
-        
-        # Delete user account
         conn.execute('DELETE FROM users WHERE username = ?', (username,))
-        
         conn.commit()
         conn.close()
-        
+        session.clear()
         return jsonify({"message": "success"}), 200
     except Exception as e:
         conn.rollback()
         conn.close()
         print(f"Error deleting account: {e}")
-        return jsonify({"message": "fail", "reason": f"탈퇴 처리 중 오류가 발생했습니다: {str(e)}"}), 500
+        return jsonify({"message": "fail", "reason": "탈퇴 처리 중 오류가 발생했습니다."}), 500
 
 
 @app.route('/api/reports', methods=['POST'])
@@ -1604,7 +1490,7 @@ def complete_google_signup():
             file_size = file.tell()
             file.seek(0)
             
-            if file_size <= 5 * 1024 * 1024:  # 5MB 이하
+            if file_size <= MAX_UPLOAD_SIZE:
                 # 이미지 최적화 및 저장
                 filename = make_webp_filename('profile')
                 optimized_path = optimize_image_file(file, filename, PROFILE_IMAGE_MAX_SIZE, DEFAULT_IMAGE_QUALITY)
@@ -1680,27 +1566,19 @@ def logout():
 def check_auth():
     """
     Check if user is authenticated and get current user info.
+    Reads from session — no DB query needed.
     """
     username = get_current_user()
     if username:
-        conn = get_db_connection()
-        user = conn.execute(
-            'SELECT username, nickname, profile_url FROM users WHERE username = ?',
-            (username,)
-        ).fetchone()
-        conn.close()
-        
-        if user:
-            return jsonify({
-                "authenticated": True,
-                "user": {
-                    "username": user['username'],
-                    "nickname": user['nickname'],
-                    "profile_url": user['profile_url'],
-                    "is_admin": is_admin(user['username'])
-                }
-            }), 200
-    
+        return jsonify({
+            "authenticated": True,
+            "user": {
+                "username": username,
+                "nickname": session.get('nickname'),
+                "profile_url": session.get('profile_url'),
+                "is_admin": is_admin(username)
+            }
+        }), 200
     return jsonify({"authenticated": False}), 200
 
 @app.route('/ads.txt')
