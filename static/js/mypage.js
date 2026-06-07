@@ -51,14 +51,13 @@ document.addEventListener('DOMContentLoaded', async () => {
  * @returns {Promise<Object|null>}
  */
 async function getCurrentUser() {
-    try {
-        const response = await fetch('/api/auth/check');
-        const data = await response.json();
-        return data.authenticated ? data.user : null;
-    } catch (e) {
-        console.error('Auth check error:', e);
-        return null;
+    if (!window._sharedAuthPromise) {
+        window._sharedAuthPromise = fetch('/api/auth/check')
+            .then(r => r.json())
+            .then(d => d.authenticated ? d.user : null)
+            .catch(() => null);
     }
+    return window._sharedAuthPromise;
 }
 
 /**

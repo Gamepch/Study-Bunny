@@ -5,8 +5,7 @@ from functools import wraps
 from PIL import Image
 from flask import Flask, render_template, jsonify, request, Response, send_file, session, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone, timedelta
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from dotenv import load_dotenv
@@ -119,9 +118,9 @@ def make_webp_filename(prefix='image'):
     return f"{prefix}_{uuid.uuid4().hex}.webp"
 
 def get_korean_time():
-    """한국 시간(KST)을 반환"""
-    korea_tz = ZoneInfo('Asia/Seoul')
-    return datetime.now(korea_tz)
+    """한국 시간(KST)을 반환 (UTC+9)"""
+    kst = timezone(timedelta(hours=9))
+    return datetime.now(kst)
 
 # PWA 파일 경로
 @app.route('/manifest.json')

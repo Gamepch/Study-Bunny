@@ -27,14 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
  * @returns {Promise<Object|null>} User object or null if not logged in.
  */
 async function getCurrentUser() {
-    try {
-        const response = await fetch('/api/auth/check');
-        const data = await response.json();
-        return data.authenticated ? data.user : null;
-    } catch (e) {
-        console.error('Auth check error:', e);
-        return null;
+    if (!window._sharedAuthPromise) {
+        window._sharedAuthPromise = fetch('/api/auth/check')
+            .then(r => r.json())
+            .then(d => d.authenticated ? d.user : null)
+            .catch(() => null);
     }
+    return window._sharedAuthPromise;
 }
 
 /**
@@ -185,17 +184,16 @@ function fetchPostDetail(postId, username = null, noCount = false) {
  * Sync API data without replacing server-rendered post body when possible.
  * @param {Object} post
  */
-function syncPostFromApi(post) {
+async function syncPostFromApi(post) {
     const listEl = document.getElementById('comments-list');
     if (listEl) {
         currentPostData = post;
-        applyPostMetadata(post);
+        await applyPostMetadata(post);
         updatePostStatsInDom(post);
-        // Always refresh comments to apply current user's permissions (edit/delete buttons)
-        refreshCommentsSection(post);
+        await refreshCommentsSection(post);
         return;
     }
-    renderPostDetail(post);
+    await renderPostDetail(post);
 }
 
 /**
@@ -236,11 +234,12 @@ function updateCommentCountDisplay(count) {
  * Re-render only the comments list (not the full post).
  * @param {Object} post
  */
-function refreshCommentsSection(post) {
+async function refreshCommentsSection(post) {
     const listEl = document.getElementById('comments-list');
     if (!listEl) return;
 
-    listEl.innerHTML = renderCommentsList(post.comments);
+    const currentUser = await getCurrentUser();
+    listEl.innerHTML = renderCommentsList(post.comments, currentUser);
     listEl.dataset.commentIds = (post.comments || []).map(comment => comment.id).join(',');
     updateCommentCountDisplay(post.comment_count);
 }
@@ -249,10 +248,10 @@ function refreshCommentsSection(post) {
  * Apply author buttons and like state without re-rendering content.
  * @param {Object} post
  */
-function applyPostMetadata(post) {
+async function applyPostMetadata(post) {
     const editBtn = document.getElementById('edit-button');
     const deleteBtn = document.getElementById('delete-button');
-    const currentUser = getCurrentUser();
+    const currentUser = await getCurrentUser();
     const isAuthor = post.is_author || (currentUser && post.username && (currentUser.username === post.username || currentUser.is_admin));
 
     if (editBtn) {
@@ -275,7 +274,7 @@ function applyPostMetadata(post) {
  * Render the post details including title, content, image, and metadata.
  * @param {Object} post 
  */
-function renderPostDetail(post) {
+async function renderPostDetail(post) {
     const container = document.getElementById('post-container');
 
     const imageHTML = post.image_url
@@ -284,6 +283,7 @@ function renderPostDetail(post) {
            </div>`
         : '';
     const formattedContent = post.content.replace(/\n/g, '<br>');
+    const currentUser = await getCurrentUser();
 
     container.innerHTML = `
         <h1 class="text-2xl font-bold text-gray-800 mb-4 leading-snug">${post.title}</h1>
@@ -327,13 +327,13 @@ function renderPostDetail(post) {
             </div>
 
             <div id="comments-list" class="space-y-4" data-comment-ids="${(post.comments || []).map(c => c.id).join(',')}">
-                ${renderCommentsList(post.comments)}
+                ${renderCommentsList(post.comments, currentUser)}
             </div>
         </div>
     `;
 
     currentPostData = post;
-    applyPostMetadata(post);
+    await applyPostMetadata(post);
 }
 
 /**
@@ -341,12 +341,11 @@ function renderPostDetail(post) {
  * @param {Array} comments 
  * @returns {string} HTML string
  */
-function renderCommentsList(comments) {
+function renderCommentsList(comments, currentUser) {
     if (!comments || comments.length === 0) {
         return `<div class="text-center text-xs text-gray-400 py-4">아직 댓글이 없어요. 첫 댓글을 남겨보세요! 🍀</div>`;
     }
 
-    const currentUser = getCurrentUser();
     return comments.map(comment => {
         const isOwner = currentUser && (currentUser.username === comment.username || currentUser.is_admin);
         const isEditing = editingCommentId === comment.id;
@@ -395,12 +394,12 @@ function escapeHtml(text) {
  * Submit a comment to the server.
  * @param {number} postId 
  */
-function submitComment(postId) {
-    const currentUser = getCurrentUser();
+async function submitComment(postId) {
+    const currentUser = await getCurrentUser();
 
     if (!currentUser) {
         alert('댓글을 작성하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 
@@ -423,7 +422,7 @@ function submitComment(postId) {
         .then(res => {
             if (res.status === 201) {
                 input.value = '';
-                fetchPostDetail(postId);
+                fetchPostDetail(postId, currentUser.username);
                 return;
             }
             alert(res.body.reason || '댓글 등록에 실패했어요.');
@@ -435,11 +434,11 @@ function submitComment(postId) {
  * Handle liking a post.
  * @param {number} postId 
  */
-function likePost(postId) {
-    const currentUser = getCurrentUser();
+async function likePost(postId) {
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         alert('좋아요를 누르려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 
@@ -478,11 +477,11 @@ function likePost(postId) {
  * Delete a post from the server.
  * @param {number} postId 
  */
-function deletePost(postId) {
-    const currentUser = getCurrentUser();
+async function deletePost(postId) {
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         alert('삭제하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 
@@ -515,11 +514,11 @@ function deletePost(postId) {
  * Report a post.
  * @param {number} postId
  */
-function reportPost(postId) {
-    const currentUser = getCurrentUser();
+async function reportPost(postId) {
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         alert('신고하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 
@@ -537,11 +536,11 @@ function reportPost(postId) {
  * Report a comment.
  * @param {number} commentId
  */
-function reportComment(commentId) {
-    const currentUser = getCurrentUser();
+async function reportComment(commentId) {
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         alert('신고하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 
@@ -587,8 +586,8 @@ function closeReportModal() {
 /**
  * Submit report
  */
-function submitReport() {
-    const currentUser = getCurrentUser();
+async function submitReport() {
+    const currentUser = await getCurrentUser();
     const target = window.__reportTarget;
 
     if (!target) {
@@ -663,11 +662,11 @@ document.addEventListener('click', (e) => {
  * Edit an existing comment.
  * @param {number} commentId
  */
-function editComment(commentId) {
-    const currentUser = getCurrentUser();
+async function editComment(commentId) {
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         alert('댓글을 수정하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 
@@ -685,11 +684,11 @@ function editComment(commentId) {
     refreshCommentsSection(currentPostData);
 }
 
-function saveCommentEdit(commentId) {
-    const currentUser = getCurrentUser();
+async function saveCommentEdit(commentId) {
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         alert('댓글을 수정하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 
@@ -716,7 +715,7 @@ function saveCommentEdit(commentId) {
         .then(res => {
             if (res.status === 200) {
                 editingCommentId = null;
-                fetchPostDetail(POST_ID);
+                fetchPostDetail(POST_ID, currentUser.username);
                 return;
             }
             alert(res.body.reason || '댓글 수정에 실패했습니다.');
@@ -735,11 +734,11 @@ function cancelCommentEdit() {
  * Delete an existing comment.
  * @param {number} commentId
  */
-function deleteComment(commentId) {
-    const currentUser = getCurrentUser();
+async function deleteComment(commentId) {
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         alert('댓글을 삭제하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 
@@ -757,7 +756,7 @@ function deleteComment(commentId) {
         .then(response => response.json().then(data => ({ status: response.status, body: data })))
         .then(res => {
             if (res.status === 200) {
-                fetchPostDetail(POST_ID);
+                fetchPostDetail(POST_ID, currentUser.username);
                 return;
             }
             alert(res.body.reason || '댓글 삭제에 실패했습니다.');
@@ -799,11 +798,11 @@ function openEditModal(postData) {
 /**
  * Submit edited post data to the server.
  */
-function submitEdit() {
-    const currentUser = getCurrentUser();
+async function submitEdit() {
+    const currentUser = await getCurrentUser();
     if (!currentUser) {
         alert('수정하려면 먼저 로그인해주세요! 🍀');
-        openAuthModal('login');
+        window.location.href = '/';
         return;
     }
 

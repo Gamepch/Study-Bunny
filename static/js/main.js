@@ -239,8 +239,6 @@ function handleSearch() {
 function renderCertFeeds(feeds) {
     const container = document.getElementById('cert-feed-container');
     if (!container) return;
-    container.innerHTML = '';
-
     if (!feeds || feeds.length === 0) {
         container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
@@ -250,12 +248,12 @@ function renderCertFeeds(feeds) {
         return;
     }
 
-    feeds.forEach(feed => {
+    container.innerHTML = feeds.map(feed => {
         const imageBlock = feed.image_url
             ? `<img src="${feed.image_url}" alt="공부 인증 이미지" loading="lazy">`
             : `<div class="cert-card-no-image"><span>📚</span></div>`;
 
-        container.innerHTML += `
+        return `
             <div class="cert-card" onclick="location.href='/post/${feed.id}'">
                 <div class="cert-card-header">
                     <img src="${feed.profile_url || 'https://placehold.co/100x100/6ee7b7/ffffff?text=🍀'}"
@@ -271,7 +269,7 @@ function renderCertFeeds(feeds) {
                     <p class="cert-card-preview">${escapeHtml(feed.content || '')}</p>
                 </div>
             </div>`;
-    });
+    }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -317,8 +315,6 @@ function filterCommunity(category) {
 function renderCommunityFeeds(feeds) {
     const container = document.getElementById('community-feed-container');
     if (!container) return;
-    container.innerHTML = '';
-
     if (!feeds || feeds.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
@@ -328,18 +324,18 @@ function renderCommunityFeeds(feeds) {
         return;
     }
 
-    feeds.forEach(feed => {
+    container.innerHTML = feeds.map(feed => {
         const dateStr = (feed.date || '').slice(0, 5);
         const tagClass = `community-tag community-tag--${feed.category}`;
 
-        container.innerHTML += `
+        return `
             <div class="community-row" onclick="location.href='/post/${feed.id}'" data-category="${feed.category}">
                 <span class="${tagClass}">${escapeHtml(feed.category || '기타')}</span>
                 <span class="community-title">${escapeHtml(feed.title || '')}</span>
                 <span class="community-comment-cnt">[${feed.comment_count || 0}]</span>
                 <span class="community-meta">${escapeHtml(feed.nickname || '')} · ${dateStr}</span>
             </div>`;
-    });
+    }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -626,11 +622,15 @@ function fetchFeeds() {
 
 async function checkLoginStatus() {
     try {
-        const response = await fetch('/api/auth/check');
-        const data = await response.json();
-        
-        if (data.authenticated && data.user) {
-            currentUser = data.user;
+        if (!window._sharedAuthPromise) {
+            window._sharedAuthPromise = fetch('/api/auth/check')
+                .then(r => r.json())
+                .then(d => d.authenticated ? d.user : null)
+                .catch(() => null);
+        }
+        const user = await window._sharedAuthPromise;
+        if (user) {
+            currentUser = user;
             await renderAuthZone(true);
         } else {
             currentUser = null;
