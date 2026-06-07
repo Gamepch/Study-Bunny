@@ -14,6 +14,9 @@ let currentAuthMode = 'login';          // 'login' | 'signup'
 let fabOpen = false;
 let lastScreenSize = window.innerWidth <= 400 ? 'mobile' : 'desktop';
 let focusBadgeData = null;              // { sessions, totalSec } | null
+let communityPage = 1;
+const COMMUNITY_PAGE_SIZE = 10;
+let currentCommunityFeeds = [];
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js')
@@ -138,8 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (window.__INITIAL_FEEDS__ && Array.isArray(window.__INITIAL_FEEDS__)) {
         allFeeds = window.__INITIAL_FEEDS__;
-        // 초기 탭(공부 인증) 렌더링은 서버사이드 HTML이 이미 담당
-        // JS 렌더링은 검색/필터 시에만 동작
     } else {
         fetchFeeds();
     }
@@ -186,16 +187,24 @@ function switchMainTab(tab) {
     const certPanel = document.getElementById('panel-certification');
     const commPanel = document.getElementById('panel-community');
 
+    const leaderboardEl  = document.getElementById('focus-leaderboard');
+    const popularPostsEl = document.getElementById('popular-posts');
+
     if (tab === 'certification') {
         certBtn.classList.add('active');
         commBtn.classList.remove('active');
         certPanel.style.display = '';
         commPanel.style.display = 'none';
+        if (leaderboardEl)  leaderboardEl.style.display  = '';
+        if (popularPostsEl) popularPostsEl.style.display = 'none';
     } else {
         commBtn.classList.add('active');
         certBtn.classList.remove('active');
         certPanel.style.display = 'none';
-        commPanel.style.display = '';
+        commPanel.style.display = 'block';
+        if (leaderboardEl)  leaderboardEl.style.display  = 'none';
+        if (popularPostsEl) popularPostsEl.style.display = '';
+        renderPopularPosts();
     }
 
     // 검색어 초기화
@@ -227,6 +236,7 @@ function handleSearch() {
         }
         renderCertFeeds(filtered);
     } else {
+        communityPage = 1;
         let filtered = getCommunityFeeds();
         if (keyword) {
             filtered = filtered.filter(f =>
@@ -328,25 +338,36 @@ function filterCommunity(category) {
 }
 
 /**
- * 커뮤니티 리스트 렌더링
+ * 커뮤니티 리스트 렌더링 (페이지네이션 포함)
  * @param {Array} feeds
  */
 function renderCommunityFeeds(feeds) {
+    // 데이터 미로드 상태면 스켈레톤 유지
+    if (!allFeeds.length) return;
+
+    currentCommunityFeeds = feeds || [];
     const container = document.getElementById('community-feed-container');
     if (!container) return;
+
     if (!feeds || feeds.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <span class="emoji">💬</span>
                 ${currentCommunityFilter === '전체' ? '아직 커뮤니티 글이 없어요.<br>첫 번째 글을 남겨보세요!' : '이 카테고리에 글이 없어요.'}
             </div>`;
+        renderCommunityPagination(0);
         return;
     }
 
-    container.innerHTML = feeds.map(feed => {
+    const totalPages = Math.ceil(feeds.length / COMMUNITY_PAGE_SIZE);
+    if (communityPage > totalPages) communityPage = 1;
+
+    const start = (communityPage - 1) * COMMUNITY_PAGE_SIZE;
+    const pageFeeds = feeds.slice(start, start + COMMUNITY_PAGE_SIZE);
+
+    container.innerHTML = pageFeeds.map(feed => {
         const dateStr = (feed.date || '').slice(0, 5);
         const tagClass = `community-tag community-tag--${feed.category}`;
-
         return `
             <div class="community-row" onclick="location.href='/post/${feed.id}'" data-category="${feed.category}">
                 <span class="${tagClass}">${escapeHtml(feed.category || '기타')}</span>
@@ -355,6 +376,73 @@ function renderCommunityFeeds(feeds) {
                 <span class="community-meta">${escapeHtml(feed.nickname || '')} · ${dateStr}</span>
             </div>`;
     }).join('');
+
+    renderCommunityPagination(feeds.length);
+}
+
+/**
+ * 커뮤니티 페이지네이션 UI 렌더링
+ * @param {number} total
+ */
+function renderCommunityPagination(total) {
+    const el = document.getElementById('community-pagination');
+    if (!el) return;
+
+    const totalPages = Math.ceil(total / COMMUNITY_PAGE_SIZE);
+    if (totalPages <= 1) {
+        el.innerHTML = '';
+        return;
+    }
+
+    const cur = communityPage;
+    const start = Math.max(1, cur - 2);
+    const end = Math.min(totalPages, cur + 2);
+    const pages = [];
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    const base = 'w-8 h-8 rounded-xl text-sm font-bold flex items-center justify-center transition-all';
+    const active = `${base} bg-emerald-400 text-white shadow-md`;
+    const inactive = `${base} bg-white text-gray-600 border border-gray-200 hover:bg-emerald-50 hover:border-emerald-200`;
+    const navBtn = 'w-8 h-8 flex items-center justify-center text-lg font-bold transition-all text-gray-400 hover:text-emerald-500';
+    const navDisabled = 'w-8 h-8 flex items-center justify-center text-lg font-bold text-gray-200 cursor-not-allowed';
+
+    let html = '<div class="flex items-center gap-2">';
+
+    html += cur > 1
+        ? `<button class="${navBtn}" onclick="goToCommunityPage(${cur - 1})">‹</button>`
+        : `<button class="${navDisabled}" disabled>‹</button>`;
+
+    if (pages[0] > 1) {
+        html += `<button class="${inactive}" onclick="goToCommunityPage(1)">1</button>`;
+        if (pages[0] > 2) html += `<span class="text-gray-400 text-sm px-1">…</span>`;
+    }
+
+    pages.forEach(p => {
+        html += `<button class="${p === cur ? active : inactive}" onclick="goToCommunityPage(${p})">${p}</button>`;
+    });
+
+    if (pages[pages.length - 1] < totalPages) {
+        if (pages[pages.length - 1] < totalPages - 1) html += `<span class="text-gray-400 text-sm px-1">…</span>`;
+        html += `<button class="${inactive}" onclick="goToCommunityPage(${totalPages})">${totalPages}</button>`;
+    }
+
+    html += cur < totalPages
+        ? `<button class="${navBtn}" onclick="goToCommunityPage(${cur + 1})">›</button>`
+        : `<button class="${navDisabled}" disabled>›</button>`;
+
+    html += '</div>';
+    el.innerHTML = html;
+}
+
+/**
+ * 커뮤니티 페이지 이동
+ * @param {number} page
+ */
+function goToCommunityPage(page) {
+    communityPage = page;
+    renderCommunityFeeds(currentCommunityFeeds);
+    const filterBar = document.getElementById('community-filter-bar');
+    if (filterBar) filterBar.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -692,6 +780,7 @@ function fetchFeeds() {
             if (currentTab === 'certification') {
                 renderCertFeeds(allFeeds.filter(f => f.category === '공부기록' || !f.category));
             } else {
+                communityPage = 1;
                 renderCommunityFeeds(getCommunityFeeds());
             }
         })
@@ -899,6 +988,57 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  POPULAR POSTS
+// ═══════════════════════════════════════════════════════════
+
+const TAG_COLORS = { '잡담': '#fb923c', '질문': '#818cf8', '꿀팁': '#facc15' };
+
+function buildPostRow(item, rank) {
+    const medals = ['🥇', '🥈', '🥉'];
+    const medal = medals[rank - 1] || rank;
+    const color = TAG_COLORS[item.category] || '#9ca3af';
+    const title = escapeHtml(item.title || item.content || '(제목 없음)');
+    return `
+        <div class="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer" onclick="location.href='/post/${item.id}'">
+            <span class="text-[15px] w-6 text-center flex-shrink-0">${medal}</span>
+            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0" style="color:${color};background:${color}20;">${escapeHtml(item.category || '기타')}</span>
+            <span class="text-[13px] text-gray-700 flex-1 truncate">${title}</span>
+            <span class="text-[11px] text-gray-400 flex-shrink-0">❤️ ${item.likes || 0}</span>
+        </div>`;
+}
+
+function buildEmptyPostRow(rank) {
+    return `
+        <div class="flex items-center gap-2 py-1 px-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+            <span class="text-[14px] w-6 text-center flex-shrink-0 font-bold text-gray-300">${rank}</span>
+            <span class="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0"></span>
+            <span class="text-[12px] text-gray-300 flex-1">아직 인기 게시물이 없어요</span>
+        </div>`;
+}
+
+let _popularRendered = false;
+
+function renderPopularPosts() {
+    const listEl = document.getElementById('popular-posts-list');
+    if (!listEl) return;
+    if (_popularRendered) return;
+    _popularRendered = true;
+
+    const comm = (allFeeds || [])
+        .filter(f => f.category !== '공부기록')
+        .sort((a, b) => ((b.likes || 0) + (b.comment_count || 0)) - ((a.likes || 0) + (a.comment_count || 0)));
+
+    if (comm.length === 0) {
+        listEl.innerHTML = [1, 2, 3].map(r => buildEmptyPostRow(r)).join('');
+        return;
+    }
+
+    const rows = comm.slice(0, 3).map((item, i) => buildPostRow(item, i + 1));
+    for (let i = comm.length + 1; i <= 3; i++) rows.push(buildEmptyPostRow(i));
+    listEl.innerHTML = rows.join('');
 }
 
 // ═══════════════════════════════════════════════════════════

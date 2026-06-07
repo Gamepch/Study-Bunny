@@ -38,12 +38,14 @@
         html[data-tab="community"] #panel-community { display: block; }
         html[data-tab="community"] #main-tab-cert { background: transparent; color: #6b7280; box-shadow: none; }
         html[data-tab="community"] #main-tab-comm { background: #34d399; color: #fff; box-shadow: 0 4px 12px rgba(52,211,153,0.32); }
+        html[data-tab="community"] #focus-leaderboard { display: none; }
+        html[data-tab="community"] #popular-posts { display: block !important; }
     </style>
 </head>
 
 <body class="bg-gradient-to-br from-[#F0FFF4] to-[#E6FFFA] min-h-screen">
 
-    <div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-20">
+    <div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative flex flex-col">
 
         <!-- ===== HEADER ===== -->
         <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
@@ -56,7 +58,7 @@
         </header>
 
 
-        <main>
+        <main class="flex-1">
         <!-- ===== MAIN TAB BAR ===== -->
         <div class="main-tab-bar">
             <button id="main-tab-cert" class="main-tab-btn active" onclick="switchMainTab('certification')">
@@ -80,30 +82,50 @@
             </div>
         </div>
 
-        <!-- ===== TODAY TOP5 FOCUS LEADERBOARD ===== -->
-        <div id="focus-leaderboard" class="px-4 mt-3">
+        <!-- ===== TAB HIGHLIGHT BOX (항상 보임 — 내부만 탭에 따라 전환) ===== -->
+        <div class="px-4 mt-3">
             <div class="bg-white/80 border border-emerald-100 rounded-2xl shadow-sm p-3">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-base">⏱</span>
-                        <span class="text-[13px] font-bold text-gray-700">오늘의 집중 시간 Top 3</span>
+
+                <!-- 집중 시간 Top 3 (공부인증 탭) -->
+                <div id="focus-leaderboard">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-base">⏱</span>
+                            <span class="text-[13px] font-bold text-gray-700">오늘의 집중 시간 Top 3</span>
+                        </div>
+                        <span id="leaderboard-date" class="text-[11px] text-gray-400"></span>
                     </div>
-                    <span id="leaderboard-date" class="text-[11px] text-gray-400"></span>
-                </div>
-                <div id="leaderboard-list" class="space-y-1.5" style="min-height:108px;">
-                    <!-- 스켈레톤 (JS 렌더링 전 자리 확보) -->
-                    {% for i in range(1, 4) %}
-                    <div class="flex items-center gap-2 py-1 px-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
-                        <span class="text-[14px] w-6 text-center flex-shrink-0 font-bold text-gray-300">{{ i }}</span>
-                        <span class="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0 animate-pulse"></span>
-                        <span class="h-2.5 bg-gray-100 rounded-full flex-1 animate-pulse"></span>
-                        <span class="w-12 h-2.5 bg-gray-100 rounded-full flex-shrink-0 animate-pulse"></span>
+                    <div id="leaderboard-list" class="space-y-1.5" style="min-height:108px;">
+                        {% for i in range(1, 4) %}
+                        <div class="flex items-center gap-2 py-1 px-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+                            <span class="text-[14px] w-6 text-center flex-shrink-0 font-bold text-gray-300">{{ i }}</span>
+                            <span class="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0 animate-pulse"></span>
+                            <span class="h-2.5 bg-gray-100 rounded-full flex-1 animate-pulse"></span>
+                            <span class="w-12 h-2.5 bg-gray-100 rounded-full flex-shrink-0 animate-pulse"></span>
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    <div id="leaderboard-my-rank" class="hidden mt-2 pt-2 border-t border-emerald-50"></div>
                 </div>
-                <!-- 내 순위 (Top5 밖일 때) -->
-                <div id="leaderboard-my-rank" class="hidden mt-2 pt-2 border-t border-emerald-50">
+
+                <!-- 인기 게시물 (커뮤니티 탭) -->
+                <div id="popular-posts" style="display:none;">
+                    <div class="flex items-center gap-1.5 mb-2">
+                        <span class="text-base">🔥</span>
+                        <span class="text-[13px] font-bold text-gray-700">인기 게시물</span>
+                    </div>
+                    <div id="popular-posts-list" class="space-y-1.5" style="min-height:108px;">
+                        {% for i in range(1, 4) %}
+                        <div class="flex items-center gap-2 py-1 px-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+                            <span class="text-[14px] w-6 text-center flex-shrink-0 font-bold text-gray-300">{{ i }}</span>
+                            <span class="w-10 h-4 bg-gray-100 rounded-md flex-shrink-0 animate-pulse"></span>
+                            <span class="h-2.5 bg-gray-100 rounded-full flex-1 animate-pulse"></span>
+                            <span class="w-8 h-2.5 bg-gray-100 rounded-full flex-shrink-0 animate-pulse"></span>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
+
             </div>
         </div>
 
@@ -205,7 +227,7 @@
         </div>
 
         <!-- ===== COMMUNITY TAB PANEL ===== -->
-        <div id="panel-community" style="display:none;">
+        <div id="panel-community">
             <!-- 커뮤니티 필터 칩 -->
             <div class="filter-chip-wrap" id="community-filter-bar">
                 <button class="filter-chip active" id="chip-전체" onclick="filterCommunity('전체')">✨ 전체</button>
@@ -216,48 +238,22 @@
             </div>
 
             <div id="community-feed-container" class="community-list">
-                {% set comm_feeds = feeds | rejectattr('category', 'equalto', '공부기록') | list %}
-                {% if comm_feeds %}
-                {% for feed in comm_feeds %}
-                <div onclick="location.href='/post/{{ feed.id }}'" class="community-row"
-                    data-category="{{ feed.category }}">
-                    <span class="community-tag community-tag--{{ feed.category }}">{{ feed.category or '기타' }}</span>
-                    <span class="community-title">{{ feed.title }}</span>
-                    <span class="community-comment-cnt">[{{ feed.comment_count or 0 }}]</span>
-                    <span class="community-meta">
-                        {{ feed.nickname }} · {{ feed.date[:5] if feed.date else '' }}
-                    </span>
+                {% for i in range(10) %}
+                <div class="community-row" style="pointer-events:none; min-height:42.5px;">
+                    <span class="inline-block w-10 h-4 bg-gray-100 rounded-md animate-pulse flex-shrink-0"></span>
+                    <span class="inline-block h-3.5 bg-gray-100 rounded-full flex-1 animate-pulse"></span>
+                    <span class="inline-block w-5 h-3.5 bg-gray-100 rounded-full flex-shrink-0 animate-pulse"></span>
+                    <span class="inline-block w-24 h-3 bg-gray-100 rounded-full flex-shrink-0 animate-pulse"></span>
                 </div>
                 {% endfor %}
-                {% else %}
-                <div class="empty-state">
-                    <span class="emoji">💬</span>
-                    아직 커뮤니티 글이 없어요.<br>첫 번째 글을 남겨보세요!
-                </div>
-                {% endif %}
             </div>
+            <div id="community-pagination" class="flex items-center justify-center py-4 px-4"></div>
         </div>
 
         <!-- 서버사이드 초기 데이터 -->
         <script>
             window.__INITIAL_FEEDS__ = {{ feeds | tojson }};
         </script>
-
-        <!-- ===== FOOTER ===== -->
-        <footer class="px-4 py-6 border-t border-emerald-50 text-xs text-gray-500 mt-4">
-            <div class="max-w-[480px] mx-auto flex flex-wrap items-center justify-center gap-3 text-sm mb-4">
-                <a href="/blog" class="hover:text-emerald-500 font-bold text-emerald-500">📚 학습자료</a>
-                <span class="text-gray-300">|</span>
-                <a href="/about" class="hover:text-emerald-500">소개</a>
-                <a href="/privacy" class="hover:text-emerald-500">개인정보</a>
-                <a href="/terms" class="hover:text-emerald-500">이용약관</a>
-                <a href="/contact" class="hover:text-emerald-500">문의</a>
-            </div>
-            <div class="max-w-[480px] mx-auto space-y-2">
-                <p>Clover Study는 Google AdSense 심사를 준비하는 사이트로, 원본 콘텐츠와 정책 페이지를 갖췄습니다.</p>
-                <p>소개 / 개인정보 / 이용약관 / 문의 페이지를 통해 방문자가 쉽게 정보를 확인할 수 있습니다.</p>
-            </div>
-        </footer>
 
         <!-- ===== WRITE MODAL ===== -->
         <div id="write-modal"
@@ -365,7 +361,20 @@
                 </button>
             </div>
         </div>
-        </main>    </div><!-- /max-w-[480px] -->
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="px-4 py-6 border-t border-gray-200 bg-gray-100 text-xs text-gray-500">
+            <div class="max-w-[480px] mx-auto flex flex-wrap items-center justify-center gap-3 text-sm mb-4">
+                <a href="/blog" class="hover:text-emerald-500 font-bold text-emerald-500">📚 학습자료</a>
+                <span class="text-gray-300">|</span>
+                <a href="/about" class="hover:text-emerald-500">소개</a>
+                <a href="/privacy" class="hover:text-emerald-500">개인정보</a>
+                <a href="/terms" class="hover:text-emerald-500">이용약관</a>
+                <a href="/contact" class="hover:text-emerald-500">문의</a>
+            </div>
+        </footer>
+    </div><!-- /max-w-[480px] -->
 
     <!-- ===== FAB MENU ===== -->
     <!-- 오버레이 (배경 클릭 시 닫힘) -->

@@ -287,6 +287,12 @@
     line-height: 1.4;
 }
 
+/* ===== COMMUNITY PANEL ===== */
+#panel-community {
+    display: none;
+    min-height: 568px;
+}
+
 /* ===== COMMUNITY LIST ===== */
 .community-list {
     background: #fff;
