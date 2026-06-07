@@ -1,12 +1,3 @@
-/* Self-hosted Gowun Dodum font */
-@font-face {
-    font-family: 'Gowun Dodum';
-    src: url('/static/fonts/GowunDodum.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-
 /* 구글 폰트 적용 클래스 (HTML body에 사용) */
 .font-cute {
     font-family: 'Gowun Dodum', sans-serif;

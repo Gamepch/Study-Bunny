@@ -20,6 +20,15 @@
     <link rel="canonical" href="https://cloverstudy.net/post/{{ post_id }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
     <link rel="preload" href="{{ url_for('static', filename='fonts/GowunDodum.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <style>
+        @font-face {
+            font-family: 'Gowun Dodum';
+            src: url('/static/fonts/GowunDodum.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
      crossorigin="anonymous"></script>

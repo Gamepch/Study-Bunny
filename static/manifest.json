@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Clover Study",
-  "short_name": "Clover",
+  "name": "클로버 스터디",
+  "short_name": "클로버 스터디",
   "description": "공스타 대신 클터디! 공부 기록 공유와 커뮤니티를 중심으로 한 고등학생들의 웹앱, 클로버 스터디에서 함께 기록하고 등급을 바꿔보세요",
   "start_url": "/",
   "scope": "/",
