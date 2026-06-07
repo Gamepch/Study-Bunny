@@ -26,7 +26,7 @@
 </head>
 <body class="bg-gradient-to-br from-[#F0FFF4] to-[#E6FFFA] min-h-screen">
     
-    <div class="max-w-[480px] mx-auto bg-white min-h-screen shadow-xl relative pb-10">
+    <div class="max-w-[480px] mx-auto bg-white min-h-screen shadow-xl relative flex flex-col">
         
         <header class="p-4 bg-emerald-50/80 backdrop-blur-md sticky top-0 z-10 border-b border-emerald-100 flex justify-between items-center">
             <button onclick="history.back()" class="text-emerald-600 hover:text-emerald-700 transition-colors p-2">
@@ -42,7 +42,7 @@
             </div>
         </header>
         
-        <main id="post-container" class="p-6">
+        <main id="post-container" class="p-6 flex-1">
             <h1 class="text-2xl font-bold text-gray-800 mb-4 leading-snug">{{ post.title }}</h1>
 
             <div class="flex justify-between items-center border-b border-emerald-50 pb-4 mb-6">
@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <div class="text-gray-700 leading-relaxed text-base break-all">
+            <div class="text-gray-700 leading-relaxed text-base break-words">
                 <ins class="kakao_ad_area" style="display:none;"
                 data-ad-unit = "DAN-sYDcoUQYCYealRwh"
                 data-ad-width = "320"
@@ -100,6 +100,13 @@
                     </svg>
                     댓글 <span id="inline-comment-count">{{ post.comment_count }}</span>
                 </div>
+                <div class="flex-1"></div>
+                <button onclick="sharePost()" class="flex items-center text-gray-500 hover:text-emerald-600 font-medium transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    공유
+                </button>
             </div>
 
             <div id="comments-section" class="mt-8 bg-emerald-50/30 -mx-6 px-6 py-6 border-t border-emerald-50">
@@ -133,15 +140,11 @@
         </main>
 
         <footer class="px-4 py-6 border-t border-gray-200 bg-gray-100 text-xs text-gray-500 mt-auto">
-            <div class="max-w-[480px] mx-auto flex flex-wrap items-center justify-center gap-3 text-sm mb-4">
+            <div class="max-w-[480px] mx-auto flex flex-wrap items-center justify-center gap-3 text-sm">
                 <a href="/about" class="hover:text-emerald-500">소개</a>
                 <a href="/privacy" class="hover:text-emerald-500">개인정보</a>
                 <a href="/terms" class="hover:text-emerald-500">이용약관</a>
                 <a href="/contact" class="hover:text-emerald-500">문의</a>
-            </div>
-            <div class="max-w-[480px] mx-auto space-y-2">
-                <p>Clover Study는 Google AdSense 심사를 준비하는 안전한 웹사이트입니다.</p>
-                <p>이용약관과 개인정보 처리방침을 통해 신뢰성을 제공합니다.</p>
             </div>
         </footer>
     </div>
@@ -165,10 +168,75 @@
         </div>
     </div>
 
+    <!-- 공유 모달 -->
+    <div id="share-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-6">
+        <div class="bg-white rounded-3xl p-6 shadow-2xl" style="width:100%; max-width:300px;">
+            <h3 class="text-base font-bold text-gray-800 mb-4 text-center">공유하기</h3>
+            <div class="flex justify-center gap-6 mb-6">
+                <button onclick="shareKakao()" class="flex flex-col items-center gap-2">
+                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background:#FEE500;">
+                        <svg viewBox="0 0 24 24" class="w-8 h-8" fill="#3C1E1E">
+                            <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.7 1.61 5.082 4.063 6.53L5.1 21l4.637-2.47A11.2 11.2 0 0012 18.6c5.523 0 10-3.477 10-7.8S17.523 3 12 3z"/>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600 font-medium">카카오톡</span>
+                </button>
+                <button onclick="copyLink()" class="flex flex-col items-center gap-2">
+                    <div class="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-600 font-medium">링크 복사</span>
+                </button>
+            </div>
+            <button onclick="closeShareModal()" class="w-full py-3 bg-gray-100 text-gray-600 rounded-2xl text-sm font-bold hover:bg-gray-200 transition-colors">닫기</button>
+        </div>
+    </div>
+
     {% include '_notifications.html' %}
     <script>
         const POST_ID = {{ post_id }};
         window.__POST_DATA__ = {{ post|tojson }};
+    </script>
+    <script>
+    function sharePost() {
+        document.getElementById('share-modal').classList.remove('hidden');
+    }
+    function closeShareModal() {
+        document.getElementById('share-modal').classList.add('hidden');
+    }
+    document.getElementById('share-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeShareModal();
+    });
+    function shareKakao() {
+        var url = location.href;
+        var title = window.__POST_DATA__ ? window.__POST_DATA__.title : document.title;
+        if (window.Kakao && window.Kakao.isInitialized()) {
+            window.Kakao.Share.sendDefault({
+                objectType: 'feed',
+                content: {
+                    title: title,
+                    description: '클로버 스터디에서 확인해보세요 🍀',
+                    imageUrl: (window.__POST_DATA__ && window.__POST_DATA__.image_url) || 'https://cloverstudy.net/static/og-image.png',
+                    link: { mobileWebUrl: url, webUrl: url }
+                }
+            });
+        } else {
+            var kakaoUrl = 'https://sharer.kakao.com/talk/friends/picker/link?app_key=&url=' + encodeURIComponent(url);
+            window.open('kakaotalk://msg/send?text=' + encodeURIComponent(title + '\n' + url), '_blank');
+        }
+    }
+    function copyLink() {
+        navigator.clipboard.writeText(location.href).then(function() {
+            closeShareModal();
+            var toast = document.createElement('div');
+            toast.textContent = '링크가 복사되었어요 🍀';
+            toast.className = 'fixed z-50 bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-sm font-bold px-5 py-3 rounded-2xl shadow-lg';
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 2000);
+        });
+    }
     </script>
     <script>
     function initSliders() {
