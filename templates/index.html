@@ -147,27 +147,15 @@
                     </div>
                 </div>
                 {% endfor %}
-                <!-- 카카오 애드핏 광고 카드 -->
-                <div class="cert-card cert-card--ad">
-                    <div class="cert-card-header">
-                        <img src="https://placehold.co/100x100/FEE500/3C1E1E?text=K" alt="카카오" class="cert-card-avatar" width="24" height="24">
-                        <span class="cert-card-nickname">카카오</span>
-                    </div>
-                    <div class="cert-card-image-wrap">
-                        <ins class="kakao_ad_area" style="display:none;"
-                            data-ad-unit="DAN-Ri1NZraiYGuwT4dg"
-                            data-ad-width="250"
-                            data-ad-height="250"></ins>
-                        <script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" async></script>
-                    </div>
-                    <div class="cert-card-footer">
-                        <div class="cert-card-stats">
-                            <span style="font-size:10px; color:#9ca3af; font-weight:700;">AD</span>
-                        </div>
-                        <p class="cert-card-preview">광고입니다.</p>
-                    </div>
+                <!-- 카카오 애드핏 320x100 -->
+                <div style="grid-column: 1 / -1;">
+                    <ins class="kakao_ad_area" style="display:none;"
+                        data-ad-unit="DAN-euDxCKuzNOvXVURb"
+                        data-ad-width="320"
+                        data-ad-height="100"></ins>
+                    <script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" async></script>
                 </div>
-                {% else %}
+{% else %}
                 <div class="empty-state" style="grid-column: 1 / -1;">
                     <span class="emoji">📸</span>
                     아직 공부 인증 사진이 없어요.<br>첫 번째 공부 인증을 올려보세요!
