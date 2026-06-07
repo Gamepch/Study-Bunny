@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateOfflineBanner();
     checkLoginStatus();
     if (typeof initNotifications === 'function') initNotifications();
+    loadLeaderboard();
 
     if (window.__INITIAL_FEEDS__ && Array.isArray(window.__INITIAL_FEEDS__)) {
         allFeeds = window.__INITIAL_FEEDS__;
@@ -898,6 +899,94 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FOCUS LEADERBOARD
+// ═══════════════════════════════════════════════════════════
+
+const RANK_MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+
+function fmtFocusTime(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    if (h > 0 && m > 0) return `${h}시간 ${m}분`;
+    if (h > 0)           return `${h}시간`;
+    if (m > 0)           return `${m}분`;
+    return `${sec}초`;
+}
+
+function buildEmptyRow(rank) {
+    return `
+        <div class="flex items-center gap-2 py-1 px-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+            <span class="text-[14px] w-6 text-center flex-shrink-0 font-bold text-gray-300">${rank}</span>
+            <span class="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0"></span>
+            <span class="text-[12px] text-gray-300 flex-1">아직 순위가 비어있어요</span>
+        </div>`;
+}
+
+function buildRankRow(item, isMe) {
+    const avatar = item.profile_url
+        ? `<img src="${escapeHtml(item.profile_url)}" alt="" class="w-6 h-6 rounded-full object-cover flex-shrink-0">`
+        : `<span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-[11px] flex-shrink-0">🍀</span>`;
+    const medal = RANK_MEDALS[item.rank - 1] || `${item.rank}위`;
+    const highlight = isMe ? 'bg-emerald-50 border border-emerald-200 rounded-xl px-2' : 'px-2';
+    return `
+        <div class="flex items-center gap-2 py-1 ${highlight}">
+            <span class="text-[15px] w-6 text-center flex-shrink-0">${medal}</span>
+            ${avatar}
+            <span class="text-[13px] font-medium text-gray-700 flex-1 truncate">${escapeHtml(item.nickname)}${isMe ? ' <span class="text-[11px] text-emerald-500 font-bold">나</span>' : ''}</span>
+            <span class="text-[12px] font-bold text-emerald-600 flex-shrink-0">${fmtFocusTime(item.total_seconds)}</span>
+            <span class="text-[11px] text-gray-400 flex-shrink-0">${item.sessions}세션</span>
+        </div>`;
+}
+
+async function loadLeaderboard() {
+    const listEl   = document.getElementById('leaderboard-list');
+    const myEl     = document.getElementById('leaderboard-my-rank');
+    const dateEl   = document.getElementById('leaderboard-date');
+    if (!listEl) return;
+
+    // 날짜 표시
+    if (dateEl) {
+        const now = new Date();
+        dateEl.textContent = `${now.getMonth()+1}월 ${now.getDate()}일`;
+    }
+
+    try {
+        const res  = await fetch('/api/focus/leaderboard');
+        const data = await res.json();
+
+        const { top5, my_record, in_top5, current_username } = data;
+
+        if (!top5 || top5.length === 0) {
+            listEl.innerHTML = [1,2,3].map(r => buildEmptyRow(r)).join('');
+            myEl.classList.add('hidden');
+            return;
+        }
+
+        const rows = top5.map(item => buildRankRow(item, item.username === current_username));
+        for (let i = top5.length + 1; i <= 3; i++) rows.push(buildEmptyRow(i));
+        listEl.innerHTML = rows.join('');
+
+        // 내 순위가 Top5 밖인 경우 하단에 표시
+        if (my_record && !in_top5) {
+            myEl.classList.remove('hidden');
+            myEl.innerHTML = `<p class="text-[11px] text-gray-400 mb-1 px-2">내 순위</p>` +
+                buildRankRow(my_record, true);
+        } else {
+            myEl.classList.add('hidden');
+        }
+
+        // 비로그인: 안내 표시
+        if (!current_username && myEl) {
+            myEl.classList.remove('hidden');
+            myEl.innerHTML = `<p class="text-[11px] text-gray-400 text-center py-1"><a href="/" onclick="openAuthModal();return false;" class="text-emerald-500 font-bold underline">로그인</a>하면 내 순위를 볼 수 있어요</p>`;
+        }
+
+    } catch {
+        listEl.innerHTML = `<div class="text-xs text-gray-400 text-center py-2">순위를 불러오지 못했어요</div>`;
+    }
 }
 
 /** 하위 호환: post.js 등에서 참조하는 기존 함수 유지 */

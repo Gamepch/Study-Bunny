@@ -292,6 +292,19 @@ def init_db():
         )
     ''')
 
+    # ── focus_records ─────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS focus_records (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            username       TEXT NOT NULL,
+            date           TEXT NOT NULL,
+            total_seconds  INTEGER NOT NULL DEFAULT 0,
+            sessions       INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(username, date)
+        )
+    ''')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_focus_date ON focus_records(date, total_seconds DESC)')
+
     # ── indexes ───────────────────────────────────────────────
     conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_category  ON posts(category)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_username  ON posts(username)')
@@ -1715,6 +1728,118 @@ def get_streak_data(username):
             pass
 
     return jsonify({'study_dates': sorted(study_dates)})
+
+@app.route('/api/focus/sync', methods=['POST'])
+def sync_focus():
+    """포모도로 집중 시간을 서버에 동기화 (로그인 사용자만)"""
+    if 'username' not in session:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    data = request.get_json(silent=True) or {}
+    total_seconds = data.get('total_seconds', 0)
+    sessions      = data.get('sessions', 0)
+
+    try:
+        total_seconds = int(total_seconds)
+        sessions      = int(sessions)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'invalid data'}), 400
+
+    if total_seconds < 0 or sessions < 0:
+        return jsonify({'error': 'invalid data'}), 400
+
+    username = session['username']
+    kst = timezone(timedelta(hours=9))
+    today = datetime.now(kst).strftime('%Y-%m-%d')
+
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT INTO focus_records (username, date, total_seconds, sessions)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(username, date) DO UPDATE SET
+            total_seconds = MAX(total_seconds, excluded.total_seconds),
+            sessions      = MAX(sessions,      excluded.sessions)
+    ''', (username, today, total_seconds, sessions))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'ok': True})
+
+
+@app.route('/api/focus/leaderboard')
+def focus_leaderboard():
+    """오늘의 집중 시간 Top3 + 현재 유저 순위 반환"""
+    kst = timezone(timedelta(hours=9))
+    today = datetime.now(kst).strftime('%Y-%m-%d')
+
+    current_username = session.get('username')
+
+    conn = get_db_connection()
+
+    # Top 3
+    top5_rows = conn.execute('''
+        SELECT fr.username, u.nickname, u.profile_url, fr.total_seconds, fr.sessions
+        FROM focus_records fr
+        JOIN users u ON u.username = fr.username
+        WHERE fr.date = ?
+        ORDER BY fr.total_seconds DESC
+        LIMIT 3
+    ''', (today,)).fetchall()
+
+    top5 = [
+        {
+            'rank': i + 1,
+            'username': row['username'],
+            'nickname': row['nickname'],
+            'profile_url': row['profile_url'],
+            'total_seconds': row['total_seconds'],
+            'sessions': row['sessions'],
+        }
+        for i, row in enumerate(top5_rows)
+    ]
+
+    # 내 순위 (Top5 밖일 경우)
+    my_rank = None
+    my_record = None
+    if current_username:
+        rank_row = conn.execute('''
+            SELECT COUNT(*) + 1 AS rank
+            FROM focus_records
+            WHERE date = ? AND total_seconds > (
+                SELECT COALESCE(total_seconds, 0)
+                FROM focus_records WHERE username = ? AND date = ?
+            )
+        ''', (today, current_username, today)).fetchone()
+
+        me_row = conn.execute('''
+            SELECT fr.username, u.nickname, u.profile_url, fr.total_seconds, fr.sessions
+            FROM focus_records fr
+            JOIN users u ON u.username = fr.username
+            WHERE fr.username = ? AND fr.date = ?
+        ''', (current_username, today)).fetchone()
+
+        if me_row:
+            my_rank = rank_row['rank'] if rank_row else None
+            my_record = {
+                'rank': my_rank,
+                'username': me_row['username'],
+                'nickname': me_row['nickname'],
+                'profile_url': me_row['profile_url'],
+                'total_seconds': me_row['total_seconds'],
+                'sessions': me_row['sessions'],
+            }
+
+    conn.close()
+
+    in_top5 = any(r['username'] == current_username for r in top5)
+
+    return jsonify({
+        'top5': top5,
+        'my_record': my_record if not in_top5 else None,
+        'in_top5': in_top5,
+        'current_username': current_username,
+    })  # top5 key 이름은 하위 호환 유지
+
 
 @app.route('/ads.txt')
 def ads():

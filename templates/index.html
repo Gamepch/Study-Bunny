@@ -80,6 +80,33 @@
             </div>
         </div>
 
+        <!-- ===== TODAY TOP5 FOCUS LEADERBOARD ===== -->
+        <div id="focus-leaderboard" class="px-4 mt-3">
+            <div class="bg-white/80 border border-emerald-100 rounded-2xl shadow-sm p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-base">⏱</span>
+                        <span class="text-[13px] font-bold text-gray-700">오늘의 집중 시간 Top 3</span>
+                    </div>
+                    <span id="leaderboard-date" class="text-[11px] text-gray-400"></span>
+                </div>
+                <div id="leaderboard-list" class="space-y-1.5" style="min-height:108px;">
+                    <!-- 스켈레톤 (JS 렌더링 전 자리 확보) -->
+                    {% for i in range(1, 4) %}
+                    <div class="flex items-center gap-2 py-1 px-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+                        <span class="text-[14px] w-6 text-center flex-shrink-0 font-bold text-gray-300">{{ i }}</span>
+                        <span class="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0 animate-pulse"></span>
+                        <span class="h-2.5 bg-gray-100 rounded-full flex-1 animate-pulse"></span>
+                        <span class="w-12 h-2.5 bg-gray-100 rounded-full flex-shrink-0 animate-pulse"></span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <!-- 내 순위 (Top5 밖일 때) -->
+                <div id="leaderboard-my-rank" class="hidden mt-2 pt-2 border-t border-emerald-50">
+                </div>
+            </div>
+        </div>
+
         <!-- ===== ADSENSE =====
         <div class="px-4 mt-3">
             <div class="feed-ad-card p-4 bg-white border border-emerald-100 rounded-3xl shadow-sm">

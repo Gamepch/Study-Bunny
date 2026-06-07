@@ -63,6 +63,22 @@ function recordFocusSession(durationSec) {
     const keys = Object.keys(hist).sort();
     if (keys.length > 365) keys.slice(0, keys.length - 365).forEach(k => delete hist[k]);
     localStorage.setItem(histKey, JSON.stringify(hist));
+
+    syncFocusToServer();
+}
+
+async function syncFocusToServer() {
+    if (currentUsername === 'guest') return;
+    try {
+        await fetch('/api/focus/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                total_seconds: getTotalSec(),
+                sessions:      getSessions(),
+            }),
+        });
+    } catch {}
 }
 
 function fmtMMSS(sec) {
@@ -105,11 +121,11 @@ function renderTimer() {
 
     // Start button
     if (isRunning) {
-        startBtn.textContent       = '⏸';
+        startBtn.innerHTML         = '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
         startBtn.style.background  = '#f87171';
         startBtn.style.boxShadow   = '0 10px 24px rgba(248,113,113,0.28)';
     } else {
-        startBtn.textContent       = '▶';
+        startBtn.innerHTML         = '<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
         startBtn.style.background  = cfg.color;
         startBtn.style.boxShadow   = `0 10px 24px ${cfg.shadow}`;
     }
