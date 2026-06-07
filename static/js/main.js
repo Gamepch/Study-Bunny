@@ -1002,7 +1002,7 @@ function buildPostRow(item, rank) {
     const color = TAG_COLORS[item.category] || '#9ca3af';
     const title = escapeHtml(item.title || item.content || '(제목 없음)');
     return `
-        <div class="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer" onclick="location.href='/post/${item.id}'">
+        <div class="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0" onclick="location.href='/post/${item.id}'">
             <span class="text-[15px] w-6 text-center flex-shrink-0">${medal}</span>
             <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0" style="color:${color};background:${color}20;">${escapeHtml(item.category || '기타')}</span>
             <span class="text-[13px] text-gray-700 flex-1 truncate">${title}</span>
@@ -1012,7 +1012,7 @@ function buildPostRow(item, rank) {
 
 function buildEmptyPostRow(rank) {
     return `
-        <div class="flex items-center gap-2 py-1 px-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+        <div class="flex items-center gap-2 py-1 px-2 rounded-xl border-b border-gray-100 last:border-b-0 bg-gray-50/50">
             <span class="text-[14px] w-6 text-center flex-shrink-0 font-bold text-gray-300">${rank}</span>
             <span class="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0"></span>
             <span class="text-[12px] text-gray-300 flex-1">아직 인기 게시물이 없어요</span>
@@ -1058,7 +1058,7 @@ function fmtFocusTime(sec) {
 
 function buildEmptyRow(rank) {
     return `
-        <div class="flex items-center gap-2 py-1 px-2 rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+        <div class="flex items-center gap-2 py-1 px-2 border-b border-gray-100 last:border-b-0 bg-gray-50/50">
             <span class="text-[14px] w-6 text-center flex-shrink-0 font-bold text-gray-300">${rank}</span>
             <span class="w-6 h-6 rounded-full bg-gray-100 flex-shrink-0"></span>
             <span class="text-[12px] text-gray-300 flex-1">아직 순위가 비어있어요</span>
@@ -1070,9 +1070,9 @@ function buildRankRow(item, isMe) {
         ? `<img src="${escapeHtml(item.profile_url)}" alt="" class="w-6 h-6 rounded-full object-cover flex-shrink-0">`
         : `<span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-[11px] flex-shrink-0">🍀</span>`;
     const medal = RANK_MEDALS[item.rank - 1] || `${item.rank}위`;
-    const highlight = isMe ? 'bg-emerald-50 border border-emerald-200 rounded-xl px-2' : 'px-2';
+    const highlight = isMe ? 'bg-emerald-50 rounded-xl' : '';
     return `
-        <div class="flex items-center gap-2 py-1 ${highlight}">
+        <div class="flex items-center gap-2 py-1 px-2 border-b border-gray-100 last:border-b-0 ${highlight}">
             <span class="text-[15px] w-6 text-center flex-shrink-0">${medal}</span>
             ${avatar}
             <span class="text-[13px] font-medium text-gray-700 flex-1 truncate">${escapeHtml(item.nickname)}${isMe ? ' <span class="text-[11px] text-emerald-500 font-bold">나</span>' : ''}</span>
