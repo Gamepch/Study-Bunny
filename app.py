@@ -627,11 +627,10 @@ def update_post(post_id):
     if 'image' in request.files:
         file = request.files['image']
         if file.filename != '':
-            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else 'jpg'
-            filename = f"{uuid.uuid4().hex}.{ext}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            image_url = f"/static/uploads/{filename}"
+            filename = make_webp_filename('post')
+            optimized_path = optimize_image_file(file, filename, max_size=POST_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
+            if optimized_path:
+                image_url = f"/static/uploads/{filename}"
 
     conn.execute('''
         UPDATE posts
