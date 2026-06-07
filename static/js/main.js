@@ -258,9 +258,17 @@ function renderCertFeeds(feeds) {
     }
 
     container.innerHTML = feeds.map(feed => {
-        const imageBlock = feed.image_url
-            ? `<img src="${feed.image_url}" alt="공부 인증 이미지" loading="lazy">`
-            : `<div class="cert-card-no-image"><span>📚</span></div>`;
+        const imgs = feed.images && feed.images.length ? feed.images : (feed.image_url ? [feed.image_url] : []);
+        let imageBlock;
+        if (imgs.length === 0) {
+            imageBlock = `<div class="cert-card-no-image"><span>📚</span></div>`;
+        } else if (imgs.length === 1) {
+            imageBlock = `<img src="${imgs[0]}" alt="공부 인증 이미지" loading="lazy">`;
+        } else {
+            const slides = imgs.map(u => `<div class="img-slider-slide"><img src="${u}" alt="공부 인증 이미지" loading="lazy" class="w-full h-full object-cover"></div>`).join('');
+            const dots = imgs.map((_, i) => `<span class="img-slider-dot${i === 0 ? ' active' : ''}"></span>`).join('');
+            imageBlock = `<div class="img-slider" data-slider><div class="img-slider-track">${slides}</div><div class="img-slider-dots">${dots}</div></div>`;
+        }
 
         return `
             <div class="cert-card" onclick="location.href='/post/${feed.id}'">
@@ -279,6 +287,7 @@ function renderCertFeeds(feeds) {
                 </div>
             </div>`;
     }).join('');
+    if (typeof initSliders === 'function') initSliders();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -422,12 +431,14 @@ function openWriteModal(type) {
                 clearDraft();
                 document.getElementById('modal-title-input').value = '';
                 document.getElementById('modal-content-input').value = '';
-                removeImage();
+                writeImages = [];
+                renderWritePreview();
             }
         } else {
             document.getElementById('modal-title-input').value = '';
             document.getElementById('modal-content-input').value = '';
-            removeImage();
+            writeImages = [];
+            renderWritePreview();
         }
     };
 
@@ -446,6 +457,7 @@ function openWriteModal(type) {
 function closeWriteModal() {
     const modal = document.getElementById('write-modal');
     if (modal) modal.classList.add('hidden');
+    writeImages = [];
 }
 
 /**\
@@ -469,6 +481,8 @@ function toggleWriteModal() {
  * 공유 폼 컴포넌트 로드
  * @returns {Promise}
  */
+let writeImages = [];
+
 function loadFormComponent() {
     return fetch('/component/form')
         .then(res => res.text())
@@ -476,33 +490,52 @@ function loadFormComponent() {
             const container = document.getElementById('form-container');
             if (container) {
                 container.innerHTML = html;
+                writeImages = [];
                 const imgInput = document.getElementById('modal-image-input');
-                const removeBtn = document.getElementById('modal-preview-remove-btn');
-                if (imgInput) imgInput.onchange = previewImage;
-                if (removeBtn) removeBtn.onclick = removeImage;
+                if (imgInput) imgInput.onchange = previewImages;
             }
         });
 }
 
-function previewImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            document.getElementById('modal-preview-img').src = e.target.result;
-            document.getElementById('modal-preview-container').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-    }
+function previewImages(event) {
+    const files = Array.from(event.target.files);
+    const remaining = 5 - writeImages.length;
+    const toProcess = files.slice(0, remaining);
+    event.target.value = '';
+    if (toProcess.length === 0) return;
+
+    queueCropFiles(toProcess, function(croppedFiles) {
+        croppedFiles.forEach(f => writeImages.push(f));
+        renderWritePreview();
+    });
 }
 
-function removeImage() {
-    const imgInput = document.getElementById('modal-image-input');
-    const previewImg = document.getElementById('modal-preview-img');
-    const previewContainer = document.getElementById('modal-preview-container');
-    if (imgInput) imgInput.value = '';
-    if (previewImg) previewImg.src = '';
-    if (previewContainer) previewContainer.classList.add('hidden');
+function renderWritePreview() {
+    const grid = document.getElementById('modal-preview-grid');
+    const container = document.getElementById('modal-preview-container');
+    if (!grid) return;
+    if (writeImages.length === 0) {
+        if (container) container.classList.add('hidden');
+        return;
+    }
+    if (container) container.classList.remove('hidden');
+    grid.innerHTML = '';
+    writeImages.forEach(function(file, idx) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const thumb = document.createElement('div');
+            thumb.className = 'img-preview-thumb';
+            thumb.innerHTML = `<img src="${e.target.result}" alt="미리보기">
+                <button type="button" class="remove-btn" onclick="removeWriteImage(${idx})">✕</button>`;
+            grid.appendChild(thumb);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function removeWriteImage(idx) {
+    writeImages.splice(idx, 1);
+    renderWritePreview();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -513,22 +546,9 @@ function saveDraft() {
     const category = document.getElementById('modal-category')?.value;
     const title    = document.getElementById('modal-title-input')?.value;
     const content  = document.getElementById('modal-content-input')?.value;
-    const imageInput = document.getElementById('modal-image-input');
-
-    const draft = { category, title, content, imageData: null };
-
-    if (imageInput?.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            draft.imageData = e.target.result;
-            localStorage.setItem('clover_draft', JSON.stringify(draft));
-            alert('임시저장되었습니다! 💾');
-        };
-        reader.readAsDataURL(imageInput.files[0]);
-    } else {
-        localStorage.setItem('clover_draft', JSON.stringify(draft));
-        alert('임시저장되었습니다! 💾');
-    }
+    const draft = { category, title, content };
+    localStorage.setItem('clover_draft', JSON.stringify(draft));
+    alert('임시저장되었습니다! 💾');
 }
 
 function loadDraft() {
@@ -539,16 +559,10 @@ function loadDraft() {
         const categoryEl = document.getElementById('modal-category');
         const titleEl    = document.getElementById('modal-title-input');
         const contentEl  = document.getElementById('modal-content-input');
-        const previewImg = document.getElementById('modal-preview-img');
-        const previewContainer = document.getElementById('modal-preview-container');
 
         if (categoryEl) categoryEl.value = draft.category || '공부기록';
         if (titleEl)    titleEl.value    = draft.title    || '';
         if (contentEl)  contentEl.value  = draft.content  || '';
-        if (draft.imageData && previewImg && previewContainer) {
-            previewImg.src = draft.imageData;
-            previewContainer.classList.remove('hidden');
-        }
     } catch (e) {
         console.error('Draft load error:', e);
     }
@@ -624,7 +638,6 @@ function submitPost() {
     const category  = document.getElementById('modal-category')?.value;
     const title     = document.getElementById('modal-title-input')?.value;
     let   content   = document.getElementById('modal-content-input')?.value;
-    const imageFile = document.getElementById('modal-image-input')?.files[0];
 
     // 포모도로 배지 마커 삽입
     if (focusBadgeData) {
@@ -643,7 +656,7 @@ function submitPost() {
     formData.append('nickname', currentUser.nickname);
     formData.append('profile_url', currentUser.profile_url);
     formData.append('username', currentUser.username);
-    if (imageFile) formData.append('image', imageFile);
+    writeImages.forEach(f => formData.append('images', f));
 
     fetch('/api/feeds', { method: 'POST', body: formData })
         .then(res => {

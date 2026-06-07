@@ -2,7 +2,8 @@
   "name": "clover-study",
   "private": true,
   "scripts": {
-    "build:css": "tailwindcss -i ./src/input.css -o ./static/css/tailwind.css --minify"
+    "build:css": "tailwindcss -i ./src/input.css -o ./static/css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./static/css/tailwind.css --watch"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.17"

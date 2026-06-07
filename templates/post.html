@@ -20,6 +20,7 @@
     <link rel="canonical" href="https://cloverstudy.net/post/{{ post_id }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9449716559355642"
      crossorigin="anonymous"></script>
 </head>
@@ -63,9 +64,26 @@
                 {{ post.content|render_content|safe }}
             </div>
 
-            {% if post.image_url %}
+            {% if post.images %}
             <div class="mt-3 w-full rounded-2xl overflow-hidden bg-emerald-50">
-                <img src="{{ post.image_url }}" alt="첨부 이미지" class="w-full h-auto object-cover">
+                {% if post.images|length == 1 %}
+                <img src="{{ post.images[0] }}" alt="첨부 이미지" class="w-full h-auto object-cover">
+                {% else %}
+                <div class="img-slider" data-slider>
+                    <div class="img-slider-track">
+                        {% for img_url in post.images %}
+                        <div class="img-slider-slide"><img src="{{ img_url }}" alt="첨부 이미지 {{ loop.index }}" class="w-full h-auto object-cover"></div>
+                        {% endfor %}
+                    </div>
+                    <button class="img-slider-prev">‹</button>
+                    <button class="img-slider-next">›</button>
+                    <div class="img-slider-dots">
+                        {% for img_url in post.images %}
+                        <span class="img-slider-dot{% if loop.first %} active{% endif %}"></span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
             {% endif %}
 
@@ -128,12 +146,71 @@
         </footer>
     </div>
 
+    <!-- ===== CROP MODAL ===== -->
+    <div id="crop-modal" class="hidden fixed inset-0 bg-gray-900/85 backdrop-blur-sm flex justify-center items-center p-4">
+        <div class="bg-white rounded-[2rem] p-5 w-full max-w-[480px] shadow-2xl flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">이미지 자르기 ✂️</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">1:1 비율로 고정 · 드래그로 영역 조정</p>
+                </div>
+            </div>
+            <div style="height: min(320px, 55vw); overflow: hidden; border-radius: 14px; background: #111;">
+                <img id="crop-image" src="" style="display: block; max-width: 100%;">
+            </div>
+            <div class="flex justify-end gap-3">
+                <button onclick="cancelCrop()" class="px-5 py-2.5 rounded-2xl bg-gray-100 text-gray-600 font-bold text-sm hover:bg-gray-200 transition-colors">취소</button>
+                <button id="crop-confirm-btn" onclick="confirmCrop()" class="px-8 py-2.5 bg-emerald-400 text-white rounded-2xl font-bold text-sm hover:bg-emerald-500 transition-colors shadow-md shadow-emerald-200">완료</button>
+            </div>
+        </div>
+    </div>
+
     {% include '_notifications.html' %}
     <script>
         const POST_ID = {{ post_id }};
         window.__POST_DATA__ = {{ post|tojson }};
     </script>
+    <script>
+    function initSliders() {
+        document.querySelectorAll('[data-slider]').forEach(function(el) {
+            if (el.dataset.sliderInit) return;
+            el.dataset.sliderInit = '1';
+            var track = el.querySelector('.img-slider-track');
+            var dots = el.querySelectorAll('.img-slider-dot');
+            var n = el.querySelectorAll('.img-slider-slide').length;
+            if (n <= 1) return;
+            var cur = 0;
+
+            // 카운터 배지 생성
+            var counter = document.createElement('div');
+            counter.className = 'img-slider-counter';
+            counter.textContent = '1 / ' + n;
+            el.appendChild(counter);
+
+            function go(idx) {
+                cur = ((idx % n) + n) % n;
+                track.style.transform = 'translateX(-' + (cur * el.offsetWidth) + 'px)';
+                dots.forEach(function(d, i) { d.classList.toggle('active', i === cur); });
+                counter.textContent = (cur + 1) + ' / ' + n;
+            }
+            var prev = el.querySelector('.img-slider-prev');
+            var next = el.querySelector('.img-slider-next');
+            if (prev) prev.addEventListener('click', function(e) { e.stopPropagation(); go(cur - 1); });
+            if (next) next.addEventListener('click', function(e) { e.stopPropagation(); go(cur + 1); });
+            dots.forEach(function(d, i) { d.addEventListener('click', function(e) { e.stopPropagation(); go(i); }); });
+            var sx = 0;
+            track.addEventListener('touchstart', function(e) { sx = e.touches[0].clientX; }, {passive: true});
+            track.addEventListener('touchend', function(e) {
+                var dx = sx - e.changedTouches[0].clientX;
+                if (Math.abs(dx) > 30) go(cur + (dx > 0 ? 1 : -1));
+            }, {passive: true});
+        });
+    }
+    document.addEventListener('DOMContentLoaded', initSliders);
+    </script>
     <script defer src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+    <script defer src="{{ url_for('static', filename='js/crop.js') }}"></script>
     <script defer src="{{ url_for('static', filename='js/post.js') }}"></script>
 
 <!-- Report Modal -->

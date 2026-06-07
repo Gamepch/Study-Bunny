@@ -2,6 +2,8 @@
  * Global State
  */
 let currentPostData = null;
+let editExistingImages = [];
+let editNewImages = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     loadEditFormComponent();
@@ -115,34 +117,67 @@ function loadEditFormComponent() {
             const container = document.getElementById('edit-form-container');
             if (container) {
                 container.innerHTML = html;
-                document.getElementById('modal-image-input').onchange = previewEditImage;
-                document.getElementById('modal-preview-remove-btn').onclick = removeEditImage;
+                const imgInput = document.getElementById('modal-image-input');
+                if (imgInput) imgInput.onchange = previewEditImages;
             }
         });
 }
 
-/**
- * Preview image in the edit modal.
- */
-function previewEditImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            document.getElementById('modal-preview-img').src = e.target.result;
-            document.getElementById('modal-preview-container').classList.remove('hidden');
-        }
-        reader.readAsDataURL(file);
-    }
+function previewEditImages(event) {
+    const files = Array.from(event.target.files);
+    const remaining = 5 - editExistingImages.length - editNewImages.length;
+    const toProcess = files.slice(0, remaining);
+    event.target.value = '';
+    if (toProcess.length === 0) return;
+
+    queueCropFiles(toProcess, function(croppedFiles) {
+        croppedFiles.forEach(f => editNewImages.push(f));
+        renderEditPreview();
+    });
 }
 
-/**
- * Remove image from the edit modal preview.
- */
-function removeEditImage() {
-    document.getElementById('modal-image-input').value = "";
-    document.getElementById('modal-preview-img').src = "";
-    document.getElementById('modal-preview-container').classList.add('hidden');
+function renderEditPreview() {
+    const grid = document.getElementById('modal-preview-grid');
+    const container = document.getElementById('modal-preview-container');
+    if (!grid) return;
+    const total = editExistingImages.length + editNewImages.length;
+    if (total === 0) {
+        if (container) container.classList.add('hidden');
+        grid.innerHTML = '';
+        return;
+    }
+    if (container) container.classList.remove('hidden');
+    grid.innerHTML = '';
+
+    editExistingImages.forEach(function(url, idx) {
+        const thumb = document.createElement('div');
+        thumb.className = 'img-preview-thumb';
+        thumb.innerHTML = `<img src="${url}" alt="기존 이미지">
+            <button type="button" class="remove-btn" onclick="removeExistingEditImage(${idx})">✕</button>`;
+        grid.appendChild(thumb);
+    });
+
+    editNewImages.forEach(function(file, idx) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const thumb = document.createElement('div');
+            thumb.className = 'img-preview-thumb';
+            thumb.innerHTML = `<img src="${e.target.result}" alt="새 이미지">
+                <button type="button" class="remove-btn" onclick="removeNewEditImage(${idx})">✕</button>`;
+            grid.appendChild(thumb);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function removeExistingEditImage(idx) {
+    editExistingImages.splice(idx, 1);
+    renderEditPreview();
+}
+
+function removeNewEditImage(idx) {
+    editNewImages.splice(idx, 1);
+    renderEditPreview();
 }
 
 /**
@@ -277,11 +312,24 @@ async function applyPostMetadata(post) {
 async function renderPostDetail(post) {
     const container = document.getElementById('post-container');
 
-    const imageHTML = post.image_url
-        ? `<div class="mt-6 w-full rounded-2xl overflow-hidden bg-emerald-50">
-               <img src="${post.image_url}" alt="첨부 이미지" class="w-full h-auto object-cover">
-           </div>`
-        : '';
+    const imgs = post.images && post.images.length ? post.images : (post.image_url ? [post.image_url] : []);
+    let imageHTML = '';
+    if (imgs.length === 1) {
+        imageHTML = `<div class="mt-6 w-full rounded-2xl overflow-hidden bg-emerald-50">
+            <img src="${imgs[0]}" alt="첨부 이미지" class="w-full h-auto object-cover">
+        </div>`;
+    } else if (imgs.length > 1) {
+        const slides = imgs.map((u, i) => `<div class="img-slider-slide"><img src="${u}" alt="첨부 이미지 ${i + 1}" class="w-full h-auto object-cover"></div>`).join('');
+        const dots = imgs.map((_, i) => `<span class="img-slider-dot${i === 0 ? ' active' : ''}"></span>`).join('');
+        imageHTML = `<div class="mt-6 w-full rounded-2xl overflow-hidden bg-emerald-50">
+            <div class="img-slider" data-slider>
+                <div class="img-slider-track">${slides}</div>
+                <button class="img-slider-prev">‹</button>
+                <button class="img-slider-next">›</button>
+                <div class="img-slider-dots">${dots}</div>
+            </div>
+        </div>`;
+    }
     const formattedContent = post.content.replace(/\n/g, '<br>');
     const currentUser = await getCurrentUser();
 
@@ -334,6 +382,7 @@ async function renderPostDetail(post) {
 
     currentPostData = post;
     await applyPostMetadata(post);
+    if (typeof initSliders === 'function') initSliders();
 }
 
 /**
@@ -785,12 +834,11 @@ function openEditModal(postData) {
     document.getElementById('modal-title-input').value = postData.title;
     document.getElementById('modal-content-input').value = postData.content;
 
-    if (postData.image_url && postData.image_url !== "") {
-        document.getElementById('modal-preview-img').src = postData.image_url;
-        document.getElementById('modal-preview-container').classList.remove('hidden');
-    } else {
-        removeEditImage();
-    }
+    editExistingImages = postData.images
+        ? [...postData.images]
+        : (postData.image_url ? [postData.image_url] : []);
+    editNewImages = [];
+    renderEditPreview();
 
     toggleEditModal();
 }
@@ -809,7 +857,6 @@ async function submitEdit() {
     const category = document.getElementById('modal-category').value;
     const title = document.getElementById('modal-title-input').value;
     const content = document.getElementById('modal-content-input').value;
-    const imageFile = document.getElementById('modal-image-input').files[0];
 
     if (!title.trim() || !content.trim()) {
         alert("제목과 내용을 입력해주세요!");
@@ -821,10 +868,8 @@ async function submitEdit() {
     formData.append('title', title);
     formData.append('content', content);
     formData.append('username', currentUser.username);
-
-    if (imageFile) {
-        formData.append('image', imageFile);
-    }
+    editExistingImages.forEach(url => formData.append('kept_images', url));
+    editNewImages.forEach(f => formData.append('images', f));
 
     fetch(`/api/feeds/${POST_ID}`, { method: 'PUT', body: formData })
         .then(res => res.json())

@@ -281,6 +281,17 @@ def init_db():
         )
     ''')
 
+    # ── post_images ───────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS post_images (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id    INTEGER NOT NULL,
+            image_url  TEXT NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE
+        )
+    ''')
+
     # ── indexes ───────────────────────────────────────────────
     conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_category  ON posts(category)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_username  ON posts(username)')
@@ -291,6 +302,7 @@ def init_db():
     conn.execute('CREATE INDEX IF NOT EXISTS idx_notif_recipient ON notifications(recipient_username, is_read, id DESC)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_reports_status  ON reports(status)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at DESC)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_post_images     ON post_images(post_id, sort_order)')
 
     conn.commit()
     conn.close()
@@ -376,8 +388,28 @@ def fetch_all_feeds(limit=200, offset=0):
         ORDER BY p.id DESC
         LIMIT ? OFFSET ?
     ''', (limit, offset)).fetchall()
+    feed_list = [dict(f) for f in feeds]
+
+    if feed_list:
+        post_ids = [f['id'] for f in feed_list]
+        placeholders = ','.join(['?' for _ in post_ids])
+        img_rows = conn.execute(
+            f'SELECT post_id, image_url FROM post_images WHERE post_id IN ({placeholders}) ORDER BY post_id, sort_order',
+            post_ids
+        ).fetchall()
+        imgs_by_post = {}
+        for row in img_rows:
+            imgs_by_post.setdefault(row['post_id'], []).append(row['image_url'])
+        for f in feed_list:
+            if f['id'] in imgs_by_post:
+                f['images'] = imgs_by_post[f['id']]
+            elif f.get('image_url'):
+                f['images'] = [f['image_url']]
+            else:
+                f['images'] = []
+
     conn.close()
-    return [dict(feed) for feed in feeds]
+    return feed_list
 
 @app.route('/api/feeds')
 def get_feeds():
@@ -413,17 +445,23 @@ def create_feed():
     if not title or not content:
         return jsonify({"message": "fail", "reason": "제목과 내용을 모두 입력해주세요."}), 400
 
-    if 'image' in request.files:
-        file = request.files['image']
-        if file.filename != '':
-            file.seek(0, os.SEEK_END)
-            if file.tell() > MAX_UPLOAD_SIZE:
-                return jsonify({"message": "fail", "reason": "이미지 파일은 5MB 이하만 업로드 가능합니다."}), 400
-            file.seek(0)
-            filename = make_webp_filename('post')
-            optimized_path = optimize_image_file(file, filename, max_size=POST_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
-            if optimized_path:
-                image_url = f"/static/uploads/{filename}"
+    image_urls = []
+    files = request.files.getlist('images')
+    if not files or (len(files) == 1 and files[0].filename == ''):
+        single = request.files.get('image')
+        files = [single] if single and single.filename != '' else []
+    for file in files[:5]:
+        if not file or file.filename == '':
+            continue
+        file.seek(0, os.SEEK_END)
+        if file.tell() > MAX_UPLOAD_SIZE:
+            return jsonify({"message": "fail", "reason": "이미지 파일은 5MB 이하만 업로드 가능합니다."}), 400
+        file.seek(0)
+        filename = make_webp_filename('post')
+        optimized_path = optimize_image_file(file, filename, max_size=POST_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
+        if optimized_path:
+            image_urls.append(f"/static/uploads/{filename}")
+    image_url = image_urls[0] if image_urls else ''
 
     date_str = get_korean_time().strftime("%Y.%m.%d %H:%M")
     conn = get_db_connection()
@@ -432,10 +470,13 @@ def create_feed():
         conn.close()
         return jsonify({"message": "fail", "reason": "잘못된 사용자 정보입니다."}), 401
 
-    conn.execute('''
+    cursor = conn.execute('''
         INSERT INTO posts (category, username, nickname, profile_url, title, content, date, image_url, views, likes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
     ''', (category, username, user['nickname'], user['profile_url'], title, content, date_str, image_url))
+    post_id = cursor.lastrowid
+    for i, url in enumerate(image_urls):
+        conn.execute('INSERT INTO post_images (post_id, image_url, sort_order) VALUES (?, ?, ?)', (post_id, url, i))
     conn.commit()
     conn.close()
     return jsonify({"message": "success"}), 201
@@ -463,8 +504,15 @@ def post_detail(post_id):
         conn.close()
         return "글을 찾을 수 없습니다.", 404
 
+    img_rows = conn.execute('SELECT image_url FROM post_images WHERE post_id = ? ORDER BY sort_order', (post_id,)).fetchall()
     comments = conn.execute('SELECT * FROM comments WHERE post_id = ? ORDER BY id ASC', (post_id,)).fetchall()
     post_dict = dict(post)
+    if img_rows:
+        post_dict['images'] = [r['image_url'] for r in img_rows]
+    elif post_dict.get('image_url'):
+        post_dict['images'] = [post_dict['image_url']]
+    else:
+        post_dict['images'] = []
     post_dict['comments'] = [dict(row) for row in comments]
     post_dict['comment_count'] = len(post_dict['comments'])
     conn.close()
@@ -499,10 +547,18 @@ def get_single_feed(post_id):
         post_dict['liked_by_current_user'] = False
         post_dict['is_author'] = False
     
+    img_rows = conn.execute('SELECT image_url FROM post_images WHERE post_id = ? ORDER BY sort_order', (post_id,)).fetchall()
+    if img_rows:
+        post_dict['images'] = [r['image_url'] for r in img_rows]
+    elif post_dict.get('image_url'):
+        post_dict['images'] = [post_dict['image_url']]
+    else:
+        post_dict['images'] = []
+
     comments = conn.execute('SELECT * FROM comments WHERE post_id = ? ORDER BY id ASC', (post_id,)).fetchall()
     post_dict['comments'] = [dict(row) for row in comments]
     post_dict['comment_count'] = len(post_dict['comments'])
-    
+
     conn.close()
     return jsonify(post_dict)
 
@@ -650,11 +706,29 @@ def update_post(post_id):
         return jsonify({"message": "fail", "reason": "제목과 내용을 모두 입력해주세요."}), 400
 
     current_post = conn.execute('SELECT image_url FROM posts WHERE id = ?', (post_id,)).fetchone()
-    image_url = current_post['image_url'] if current_post else ""
+    existing_imgs = conn.execute('SELECT image_url FROM post_images WHERE post_id = ? ORDER BY sort_order', (post_id,)).fetchall()
 
-    if 'image' in request.files:
-        file = request.files['image']
-        if file.filename != '':
+    kept_images = request.form.getlist('kept_images')
+    new_files = [f for f in request.files.getlist('images') if f and f.filename != '']
+    if not new_files:
+        single = request.files.get('image')
+        if single and single.filename != '':
+            new_files = [single]
+
+    # If neither kept_images nor new_files sent, preserve existing images (backward compat)
+    form_keys = set(request.form.keys())
+    client_sent_image_data = 'kept_images' in form_keys or bool(new_files)
+
+    if not client_sent_image_data:
+        if existing_imgs:
+            image_urls = [r['image_url'] for r in existing_imgs]
+        elif current_post and current_post['image_url']:
+            image_urls = [current_post['image_url']]
+        else:
+            image_urls = []
+    else:
+        image_urls = list(kept_images)
+        for file in new_files[:max(0, 5 - len(image_urls))]:
             file.seek(0, os.SEEK_END)
             if file.tell() > MAX_UPLOAD_SIZE:
                 conn.close()
@@ -663,7 +737,13 @@ def update_post(post_id):
             filename = make_webp_filename('post')
             optimized_path = optimize_image_file(file, filename, max_size=POST_IMAGE_MAX_SIZE, quality=DEFAULT_IMAGE_QUALITY)
             if optimized_path:
-                image_url = f"/static/uploads/{filename}"
+                image_urls.append(f"/static/uploads/{filename}")
+
+    conn.execute('DELETE FROM post_images WHERE post_id = ?', (post_id,))
+    for i, url in enumerate(image_urls[:5]):
+        conn.execute('INSERT INTO post_images (post_id, image_url, sort_order) VALUES (?, ?, ?)', (post_id, url, i))
+
+    image_url = image_urls[0] if image_urls else ''
 
     conn.execute('''
         UPDATE posts
