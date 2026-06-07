@@ -147,15 +147,15 @@
     </div>
 
     <!-- ===== CROP MODAL ===== -->
-    <div id="crop-modal" class="hidden fixed inset-0 bg-gray-900/85 backdrop-blur-sm flex justify-center items-center p-4">
+    <div id="crop-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex justify-center items-center p-4">
         <div class="bg-white rounded-[2rem] p-5 w-full max-w-[480px] shadow-2xl flex flex-col gap-4">
             <div class="flex justify-between items-center">
                 <div>
                     <h2 class="text-lg font-bold text-gray-800">이미지 자르기 ✂️</h2>
-                    <p class="text-xs text-gray-500 mt-0.5">1:1 비율로 고정 · 드래그로 영역 조정</p>
+                    <p class="text-xs text-gray-500 mt-0.5">사진을 드래그하거나 확대해서 조절해 보세요</p>
                 </div>
             </div>
-            <div style="height: min(320px, 55vw); overflow: hidden; border-radius: 14px; background: #111;">
+            <div style="width: 100%; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 14px; background: #111;">
                 <img id="crop-image" src="" style="display: block; max-width: 100%;">
             </div>
             <div class="flex justify-end gap-3">
