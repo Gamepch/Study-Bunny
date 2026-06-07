@@ -2186,20 +2186,37 @@ def manual_water():
         return jsonify({'error': 'unauthorized'}), 401
 
     conn = get_db_connection()
-    row = conn.execute('SELECT pending_water FROM clover_status WHERE username = ?', (username,)).fetchone()
+    row = conn.execute(
+        'SELECT pending_water, water_count, stage FROM clover_status WHERE username = ?', (username,)
+    ).fetchone()
     pending = row['pending_water'] if row else 0
 
     if pending <= 0:
         conn.close()
         return jsonify({'error': '아직 모인 물이 없어요! 글 작성·댓글·포모도로를 해보세요 🌱'}), 400
 
-    result = add_water(username, pending, conn)
+    # 다음 단계까지 필요한 물만큼만 적용
+    current_stage = row['stage'] if row else 0
+    current_water = row['water_count'] if row else 0
+    if current_stage < 4:
+        next_threshold = CLOVER_THRESHOLDS[current_stage + 1]
+        needed = next_threshold - current_water
+        apply = min(pending, max(needed, 1))
+    else:
+        apply = 0  # 이미 네잎 클로버
 
-    conn.execute('UPDATE clover_status SET pending_water = 0 WHERE username = ?', (username,))
+    if apply <= 0:
+        conn.close()
+        return jsonify({'error': '이미 네잎 클로버예요! 카드로 저장해보세요 🍀'}), 400
+
+    result = add_water(username, apply, conn)
+    remaining = pending - apply
+
+    conn.execute('UPDATE clover_status SET pending_water = ? WHERE username = ?', (remaining, username))
     conn.commit()
     conn.close()
 
-    return jsonify({**result, 'pending': 0, 'message': f'💧 물주기 완료! (+{pending})'}), 200
+    return jsonify({**result, 'pending': remaining, 'message': f'💧 물주기 완료! (+{apply})'}), 200
 
 
 @app.route('/api/clover/card', methods=['POST'])

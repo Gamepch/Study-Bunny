@@ -63,10 +63,10 @@
         }
         .clover-card {
             border-radius: 22px;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(20px) saturate(120%);
-            -webkit-backdrop-filter: blur(20px) saturate(120%);
-            border: 1px solid rgba(255,255,255,0.45);
+            background: rgba(30, 60, 45, 0.18);
+            backdrop-filter: blur(20px) saturate(140%);
+            -webkit-backdrop-filter: blur(20px) saturate(140%);
+            border: 1px solid rgba(255,255,255,0.25);
             box-shadow:
                 0 8px 40px rgba(0,0,0,0.12),
                 0 2px 8px rgba(0,0,0,0.06),
@@ -121,11 +121,16 @@
             transition: opacity 0.25s ease;
             mix-blend-mode: screen;
         }
+        #clover-card-grid { scrollbar-width: thin; scrollbar-color: #34d399 #d1fae5; }
+        #clover-card-grid::-webkit-scrollbar { height: 4px; }
+        #clover-card-grid::-webkit-scrollbar-track { background: #d1fae5; border-radius: 99px; }
+        #clover-card-grid::-webkit-scrollbar-thumb { background: #34d399; border-radius: 99px; }
+
         /* 카드 하단 텍스트 영역 */
         .card-info {
             text-align: center;
             width: 100%;
-            border-top: 1px solid rgba(255,255,255,0.25);
+            border-top: 1px solid rgba(167,243,208,0.5);
             padding-top: 10px;
         }
     </style>
@@ -294,19 +299,18 @@
 
         <!-- ===== 클로버 키우기 ===== -->
         <div class="mx-4 mt-4 rounded-3xl p-5 overflow-hidden" id="clover-game-section"
-            style="display:none; background:rgba(52,211,153,0.75); backdrop-filter:blur(32px) saturate(200%); -webkit-backdrop-filter:blur(32px) saturate(200%); border:1px solid rgba(255,255,255,0.2); box-shadow:0 8px 32px rgba(0,0,0,0.15);">
+            style="display:none; background:#dcfce7; border:1px solid #bbf7d0; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
 
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold" style="color:#052e16;">🍀 내 클로버 키우기</h3>
-                <span id="clover-stage-badge" style="background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.6);color:#052e16;"
-                    class="text-base px-3 py-1 rounded-full font-bold">씨앗</span>
+                <h3 class="text-base font-bold text-gray-700">🍀 내 클로버 키우기</h3>
+                <span id="clover-stage-badge" class="text-sm px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">씨앗</span>
             </div>
 
             <!-- 클로버 비주얼 -->
             <div class="flex justify-center mb-4">
                 <div id="clover-visual"
                     class="w-28 h-28 flex items-center justify-center text-7xl select-none transition-all duration-500 rounded-full"
-                    style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);">
+                    style="background:#f0fdf4;border:1px solid #d1fae5;">
                     🌱
                 </div>
             </div>
@@ -314,16 +318,16 @@
             <!-- 방치 경고 -->
             <div id="clover-wilt-warning"
                 class="hidden mb-3 rounded-2xl p-3 text-center"
-                style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);">
-                <p class="text-xs font-medium" style="color:#78350f;">⚠️ 클로버가 시들어가고 있어요! 공부하러 가볼까요?</p>
+                class="bg-amber-50 border border-amber-100">
+                <p class="text-xs text-amber-700 font-medium">⚠️ 클로버가 시들어가고 있어요! 공부하러 가볼까요?</p>
             </div>
 
             <!-- 네잎 달성 배너 -->
             <div id="clover-achieved-banner"
                 class="hidden mb-3 rounded-2xl p-4 text-center"
-                style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.35);">
-                <p class="text-sm font-bold mb-2" style="color:#052e16;">✨ 네잎 클로버 완성!</p>
-                <p class="text-xs mb-3" style="color:#064e3b;">카드로 저장하고 새 씨앗을 심어보세요</p>
+                class="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200">
+                <p class="text-sm font-bold text-emerald-700 mb-2">✨ 네잎 클로버 완성!</p>
+                <p class="text-xs text-emerald-600 mb-3">카드로 저장하고 새 씨앗을 심어보세요</p>
                 <button onclick="saveCloverCard()"
                     class="px-4 py-2 bg-emerald-500 text-white text-sm font-bold rounded-2xl hover:bg-emerald-400 transition-colors active:scale-[0.97]">
                     🌿 카드로 저장하기
@@ -332,28 +336,29 @@
 
             <!-- 진행바 (달성 전만 표시) -->
             <div id="clover-progress-area" class="mb-3">
-                <div class="flex justify-between text-base mb-1.5" style="color:#052e16;">
+                <div class="flex justify-between text-sm mb-1.5 text-gray-500">
                     <span id="clover-water-text">물 0회</span>
                     <span id="clover-next-text">다음 단계까지 10회</span>
                 </div>
-                <div class="w-full rounded-full h-2.5 overflow-hidden" style="background:rgba(255,255,255,0.35);">
+                <div class="w-full bg-emerald-50 rounded-full h-2.5 overflow-hidden">
                     <div id="clover-progress-bar"
-                        class="h-2.5 rounded-full transition-all duration-700" style="width:0%;background:#052e16;"></div>
+                        class="bg-emerald-400 h-2.5 rounded-full transition-all duration-700" style="width:0%;"></div>
                 </div>
             </div>
 
             <!-- 수동 물주기 버튼 -->
             <button id="clover-water-btn" onclick="manualWater()"
                 class="w-full py-3 rounded-2xl text-sm font-bold transition-colors active:scale-[0.98]"
-                style="background:rgba(255,255,255,0.35);color:#052e16;border:1px solid rgba(255,255,255,0.55);">
+                class="bg-emerald-50 text-emerald-600 border border-emerald-100">
                 💧 물주기
             </button>
-            <p class="text-center text-sm mt-2" style="color:#064e3b;">글 작성·댓글·포모도로로 물을 모아서 버튼을 눌러보세요</p>
+            <p class="text-center text-xs text-gray-400 mt-2">글 작성·댓글·포모도로로 물을 모아서 버튼을 눌러보세요</p>
 
             <!-- 카드 갤러리 -->
-            <div id="clover-gallery" class="hidden mt-5 pt-4" style="border-top:1px solid rgba(255,255,255,0.3);">
-                <p class="text-base font-bold mb-3" style="color:#052e16;">🌿 내 클로버 카드 <span id="clover-card-count">0</span>장</p>
-                <div id="clover-card-grid" class="grid grid-cols-3 gap-2"></div>
+            <div id="clover-gallery" class="hidden mt-5 pt-4 border-t border-emerald-50">
+                <p class="text-sm font-bold text-gray-600 mb-3">🌿 내 클로버 카드 <span id="clover-card-count">0</span>장</p>
+                <div id="clover-card-grid"
+                    style="display:flex;overflow-x:scroll;scroll-snap-type:x mandatory;gap:8px;padding-bottom:8px;cursor:grab;-webkit-overflow-scrolling:touch;"></div>
             </div>
         </div>
 
@@ -373,10 +378,10 @@
                         <img src="/static/clover.png" alt="클로버"
                             style="width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.3));flex-shrink:0;transform:translateZ(20px);">
                         <div class="card-info">
-                            <p id="card-number-text" style="font-size:9px;font-weight:800;color:rgba(255,255,255,0.5);letter-spacing:0.18em;margin-bottom:5px;">No. 001</p>
-                            <p id="card-name-text" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:2px;"></p>
-                            <p id="card-days-text" style="font-size:9px;color:rgba(255,255,255,0.5);"></p>
-                            <p id="card-date-text" style="font-size:9px;color:rgba(255,255,255,0.6);font-weight:600;margin-top:2px;"></p>
+                            <p id="card-number-text" style="font-size:9px;font-weight:800;color:#6ee7b7;letter-spacing:0.18em;margin-bottom:5px;">No. 001</p>
+                            <p id="card-name-text" style="font-size:12px;font-weight:700;color:#1f2937;margin-bottom:2px;"></p>
+                            <p id="card-days-text" style="font-size:9px;color:#9ca3af;"></p>
+                            <p id="card-date-text" style="font-size:9px;color:#34d399;font-weight:600;margin-top:2px;"></p>
                         </div>
                     </div>
                 </div>
@@ -582,7 +587,9 @@
         }
 
         // 배지
-        document.getElementById('clover-stage-badge').textContent = CLOVER_NAMES[stage];
+        const badgeEl = document.getElementById('clover-stage-badge');
+        badgeEl.textContent = CLOVER_NAMES[stage];
+        badgeEl.dataset.stage = stage;
 
         // 방치 경고
         const warnEl = document.getElementById('clover-wilt-warning');
@@ -617,12 +624,14 @@
             btn.disabled = false;
             btn.textContent = `💧 물주기 (${pending}회 모였어요!)`;
             btn.className = baseBtn;
-            btn.style.cssText = 'background:rgba(255,255,255,0.35);color:#052e16;border:1px solid rgba(255,255,255,0.55);';
+            btn.style.cssText = '';
+            btn.className = `${baseBtn} bg-emerald-400 text-white hover:bg-emerald-500 border-emerald-300`;
         } else {
             btn.disabled = true;
             btn.textContent = '💧 물이 아직 없어요';
             btn.className = baseBtn + ' cursor-not-allowed';
-            btn.style.cssText = 'background:rgba(255,255,255,0.15);color:rgba(5,46,22,0.45);border:1px solid rgba(255,255,255,0.25);';
+            btn.style.cssText = '';
+            btn.className = `${baseBtn} bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed`;
         }
 
         // 갤러리
@@ -640,7 +649,7 @@
         gallery.classList.remove('hidden');
         count.textContent = cards.length;
         grid.innerHTML = cards.map(c => `
-            <div class="clover-card-wrap" style="perspective:600px;">
+            <div class="clover-card-wrap" style="perspective:600px;flex:0 0 calc(33.333% - 6px);scroll-snap-align:start;">
                 <button onclick="showCardDetail(${c.card_number}, '${c.earned_at}', ${c.days_taken})"
                     class="clover-card"
                     style="width:100%;aspect-ratio:2/3;padding:12px 8px 10px;border-radius:16px;cursor:pointer;">
@@ -697,6 +706,16 @@
                 alert(data.error || '물주기 실패');
                 btn.disabled = false;
                 return;
+            }
+            // 단계가 올랐으면 게이지 100% 채우고 잠깐 대기 후 전환
+            const badge = document.getElementById('clover-stage-badge');
+            const prevStage = parseInt(badge?.dataset.stage ?? '-1');
+            if (data.stage > prevStage) {
+                const bar = document.getElementById('clover-progress-bar');
+                if (bar) {
+                    bar.style.width = '100%';
+                    await new Promise(r => setTimeout(r, 650));
+                }
             }
             await loadCloverStatus();
         } catch(e) {
@@ -804,9 +823,41 @@
     new MutationObserver(attachCardTilts).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
     attachCardTilts();
 
+    // 카드 갤러리 드래그 슬라이더 (한 번만 초기화)
+    (function initSliderDrag() {
+        const slider = document.getElementById('clover-card-grid');
+        let isDown = false, startX = 0, scrollLeft = 0, moved = false;
+
+        slider.addEventListener('mousedown', e => {
+            isDown = true;
+            moved = false;
+            startX = e.pageX;
+            scrollLeft = slider.scrollLeft;
+            slider.style.cursor = 'grabbing';
+            slider.style.userSelect = 'none';
+        });
+        window.addEventListener('mouseup', () => {
+            if (!isDown) return;
+            isDown = false;
+            slider.style.cursor = 'grab';
+            slider.style.userSelect = '';
+        });
+        window.addEventListener('mousemove', e => {
+            if (!isDown) return;
+            const dx = e.pageX - startX;
+            if (Math.abs(dx) > 4) moved = true;
+            if (moved) slider.scrollLeft = scrollLeft - dx;
+        });
+        slider.addEventListener('click', e => {
+            if (moved) e.stopPropagation();
+        }, true);
+
+    })();
+
     // 페이지 로드 시 클로버 상태 조회 (API가 401 반환하면 자동으로 숨김 유지)
     loadCloverStatus();
     </script>
+
 </body>
 
 </html>
