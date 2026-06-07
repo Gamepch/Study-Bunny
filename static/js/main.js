@@ -150,12 +150,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 창 크기 변경 시 auth-zone 리렌더링 (400px 기준)
     // 실제 경계(400px)를 넘을 때만 리렌더링 (불필요한 API 요청 줄임)
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', async () => {
         if (!currentUser) return;
         const currentSize = window.innerWidth <= 400 ? 'mobile' : 'desktop';
         if (currentSize !== lastScreenSize) {
             lastScreenSize = currentSize;
-            renderAuthZone(true);
+            await renderAuthZone(true);
         }
     });
 });
@@ -624,32 +624,42 @@ function fetchFeeds() {
 //  AUTH
 // ═══════════════════════════════════════════════════════════
 
-function checkLoginStatus() {
-    const savedUser = localStorage.getItem('clover_study_user');
-    if (savedUser) {
-        try {
-            currentUser = JSON.parse(savedUser);
-            renderAuthZone(true);
-        } catch (e) {
+async function checkLoginStatus() {
+    try {
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        
+        if (data.authenticated && data.user) {
+            currentUser = data.user;
+            await renderAuthZone(true);
+        } else {
             currentUser = null;
-            localStorage.removeItem('clover_study_user');
-            renderAuthZone(false);
+            await renderAuthZone(false);
         }
-    } else {
+    } catch (err) {
+        console.error('Auth check error:', err);
         currentUser = null;
-        renderAuthZone(false);
+        await renderAuthZone(false);
     }
 }
 
-function renderAuthZone(isLoggedIn) {
+async function renderAuthZone(isLoggedIn) {
     const authZone = document.getElementById('auth-zone');
     if (!authZone) return;
 
     if (isLoggedIn && currentUser) {
         const isMobile = window.innerWidth <= 400;
+        const notificationBellBtn = `
+            <button type="button" class="notification-bell-btn relative p-2 rounded-xl text-emerald-500 hover:bg-emerald-50 transition-colors" onclick="openNotificationsModal()" title="알림" aria-label="알림">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span class="notification-badge hidden" style="position: absolute; top: -2px; right: -2px; width: 18px; height: 18px; background-color: #ef4444; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; line-height: 1;">0</span>
+            </button>
+        `;
         authZone.innerHTML = `
             <div class="flex items-center space-x-2">
-                ${typeof notificationBellButtonHtml === 'function' ? notificationBellButtonHtml() : ''}
+                ${notificationBellBtn}
                 ${isMobile ? `
                     <button onclick="location.href='/mypage?user=${encodeURIComponent(currentUser.username)}'" class="p-2 rounded-xl text-emerald-500 hover:bg-emerald-50 transition-colors" title="마이페이지">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -681,10 +691,16 @@ function renderAuthZone(isLoggedIn) {
 
 function handleLogout() {
     if (confirm('로그아웃 하시겠어요? 🍀')) {
-        localStorage.removeItem('clover_study_user');
-        currentUser = null;
-        alert('로그아웃 되었습니다!');
-        location.reload();
+        fetch('/api/logout', { method: 'POST' })
+            .then(() => {
+                currentUser = null;
+                alert('로그아웃 되었습니다!');
+                location.reload();
+            })
+            .catch(err => {
+                console.error('Logout error:', err);
+                alert('로그아웃 중 오류가 발생했습니다.');
+            });
     }
 }
 
@@ -778,11 +794,9 @@ function handleAuthSubmit() {
             .then(res => res.json().then(data => ({ status: res.status, body: data })))
             .then(res => {
                 if (res.status === 200) {
-                    localStorage.setItem('clover_study_user', JSON.stringify(res.body.user));
-                    currentUser = res.body.user;
-                    alert(`${currentUser.nickname}님, 반가워요! 오늘도 열공해봐요! 🐾`);
+                    // 세션이 자동으로 저장됨 (HttpOnly 쿠키)
+                    alert(`${res.body.user.nickname}님, 반가워요! 오늘도 열공해봐요! 🐾`);
                     closeAuthModal();
-                    renderAuthZone(true);
                     location.reload();
                 } else {
                     alert(res.body.reason || '아이디 또는 비밀번호를 다시 확인해주세요.');

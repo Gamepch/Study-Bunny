@@ -116,32 +116,36 @@
     </div>
 
     <script>
-        // Check admin status
-        function checkAdminAccess() {
-            const user = localStorage.getItem('clover_study_user');
-            if (!user) {
-                alert('로그인이 필요합니다.');
-                location.href = '/';
-                return false;
-            }
-
+        // Check admin access from server session
+        async function checkAdminAccess() {
             try {
-                const userData = JSON.parse(user);
-                if (!userData.is_admin) {
+                const response = await fetch('/api/auth/check');
+                const data = await response.json();
+                
+                if (!data.authenticated) {
+                    alert('로그인이 필요합니다.');
+                    location.href = '/';
+                    return false;
+                }
+                
+                if (!data.user.is_admin) {
                     alert('관리자 권한이 필요합니다.');
                     location.href = '/';
                     return false;
                 }
+                
                 return true;
             } catch (e) {
+                console.error('Auth check error:', e);
+                alert('인증 확인 중 오류가 발생했습니다.');
                 location.href = '/';
                 return false;
             }
         }
 
         // Load users
-        function loadUsers() {
-            if (!checkAdminAccess()) return;
+        async function loadUsers() {
+            if (!await checkAdminAccess()) return;
 
             fetch('/api/admin/users')
                 .then(response => {
@@ -177,8 +181,8 @@
         }
 
         // Load reports
-        function loadReports() {
-            if (!checkAdminAccess()) return;
+        async function loadReports() {
+            if (!await checkAdminAccess()) return;
 
             fetch('/api/admin/reports?status=pending')
                 .then(response => {

@@ -2,13 +2,16 @@
  * In-app notifications (comments, likes on my posts).
  */
 
-function getNotificationUser() {
-    const saved = localStorage.getItem('clover_study_user');
-    if (!saved) return null;
+/**
+ * Get current logged-in user from server session.
+ */
+async function getNotificationUser() {
     try {
-        return JSON.parse(saved);
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        return data.authenticated ? data.user : null;
     } catch (e) {
-        localStorage.removeItem('clover_study_user');
+        console.error('Auth check error:', e);
         return null;
     }
 }
@@ -24,24 +27,34 @@ function notificationBellButtonHtml() {
     `;
 }
 
-function mountNotificationBell(containerId) {
-    const el = document.getElementById(containerId);
-    if (!el || !getNotificationUser()) return;
+async function mountNotificationBell(containerId) {
+    // 'notification-bell-container'에만 버튼을 추가
+    let el = document.getElementById('notification-bell-container');
+    
+    if (!el) {
+        // notification-bell-container가 없으면 containerId 사용
+        el = document.getElementById(containerId);
+    }
+    
+    if (!el) return;
+    
+    // 이미 버튼이 있으면 반환 (중복 생성 방지)
     if (el.querySelector('.notification-bell-btn')) return;
-    el.insertAdjacentHTML('afterbegin', notificationBellButtonHtml());
+    
+    const user = await getNotificationUser();
+    if (!user) return;
+    
+    // insertAdjacentHTML로 추가 (기존 내용 유지)
+    el.insertAdjacentHTML('beforeend', notificationBellButtonHtml());
 }
 
-function initNotifications() {
-    const user = getNotificationUser();
+async function initNotifications() {
+    const user = await getNotificationUser();
     if (!user) return;
-    mountNotificationBell('auth-zone');
-    // notification-zone은 mypage에서 사용하므로 조건부 마운트
-    const notificationZone = document.getElementById('notification-zone');
-    if (notificationZone) {
-        mountNotificationBell('notification-zone');
-    }
-    // 뱃지 업데이트는 약간의 지연 후에 실행하여 DOM 렌더링 보장
-    setTimeout(() => refreshNotificationBadge(), 100);
+    
+    // 알림 버튼 마운트는 renderAuthZone()에서 이미 처리됨
+    // initNotifications()에서는 배지만 업데이트
+    refreshNotificationBadge();
 }
 
 function updateNotificationBadge(count) {
@@ -59,8 +72,8 @@ function updateNotificationBadge(count) {
     });
 }
 
-function refreshNotificationBadge() {
-    const user = getNotificationUser();
+async function refreshNotificationBadge() {
+    const user = await getNotificationUser();
     if (!user) return;
 
     fetch(`/api/notifications/${encodeURIComponent(user.username)}`)
@@ -70,17 +83,18 @@ function refreshNotificationBadge() {
 }
 
 function openNotificationsModal() {
-    const user = getNotificationUser();
-    if (!user) {
-        alert('알림을 보려면 로그인해주세요! 🍀');
-        if (typeof openAuthModal === 'function') openAuthModal('login');
-        return;
-    }
-
-    const modal = document.getElementById('notifications-modal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    loadNotificationsList();
+    // 비동기 처리 필요
+    getNotificationUser().then(user => {
+        if (!user) {
+            alert('알림을 보려면 로그인해주세요! 🍀');
+            if (typeof openAuthModal === 'function') openAuthModal('login');
+            return;
+        }
+        const modal = document.getElementById('notifications-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        loadNotificationsList();
+    });
 }
 
 function closeNotificationsModal() {
@@ -89,24 +103,25 @@ function closeNotificationsModal() {
 }
 
 function loadNotificationsList() {
-    const user = getNotificationUser();
-    const list = document.getElementById('notifications-list');
-    if (!user || !list) return;
-
-    list.innerHTML = `<div class="text-center text-emerald-300 text-xs py-10">불러오는 중... 🍀</div>`;
-
-    fetch(`/api/notifications/${encodeURIComponent(user.username)}`)
-        .then(res => {
-            if (!res.ok) throw new Error('load failed');
-            return res.json();
-        })
-        .then(data => {
-            updateNotificationBadge(data.unread_count || 0);
-            renderNotificationsList(data.notifications || []);
-        })
-        .catch(() => {
-            list.innerHTML = `<div class="text-center text-red-400 text-xs py-10">알림을 불러오지 못했어요.</div>`;
-        });
+    getNotificationUser().then(user => {
+        const list = document.getElementById('notifications-list');
+        if (!user || !list) return;
+        list.innerHTML = `<div class="text-center text-emerald-300 text-xs py-10">불러오는 중... 🍀</div>`;
+        
+        fetch(`/api/notifications/${encodeURIComponent(user.username)}`)
+            .then(res => {
+                if (!res.ok) throw new Error('load failed');
+                return res.json();
+            })
+            .then(data => {
+                updateNotificationBadge(data.unread_count || 0);
+                renderNotificationsList(data.notifications || []);
+            })
+            .catch(error => {
+                console.error('Load notifications error:', error);
+                list.innerHTML = `<div class="text-center text-red-400 text-xs py-10">알림을 불러오지 못했어요. 😢</div>`;
+            });
+    });
 }
 
 function renderNotificationsList(notifications) {
@@ -151,44 +166,46 @@ function escapeNotificationHtml(text) {
 }
 
 function openNotificationTarget(notificationId, postId) {
-    const user = getNotificationUser();
-    if (!user) {
-        window.location.href = `/post/${postId}`;
-        return;
-    }
-
-    fetch(`/api/notifications/${encodeURIComponent(user.username)}/${notificationId}/read`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user.username }),
-    })
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-            if (data && typeof data.unread_count === 'number') {
-                updateNotificationBadge(data.unread_count);
-            }
-        })
-        .finally(() => {
-            closeNotificationsModal();
+    getNotificationUser().then(user => {
+        if (!user) {
             window.location.href = `/post/${postId}`;
-        });
+            return;
+        }
+
+        fetch(`/api/notifications/${encodeURIComponent(user.username)}/${notificationId}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username }),
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && typeof data.unread_count === 'number') {
+                    updateNotificationBadge(data.unread_count);
+                }
+            })
+            .finally(() => {
+                closeNotificationsModal();
+                window.location.href = `/post/${postId}`;
+            });
+    });
 }
 
 function markAllNotificationsRead() {
-    const user = getNotificationUser();
-    if (!user) return;
+    getNotificationUser().then(user => {
+        if (!user) return;
 
-    fetch(`/api/notifications/${encodeURIComponent(user.username)}/read-all`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: user.username }),
-    })
-        .then(res => res.json())
-        .then(() => {
-            updateNotificationBadge(0);
-            loadNotificationsList();
+        fetch(`/api/notifications/${encodeURIComponent(user.username)}/read-all`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username }),
         })
-        .catch(() => alert('처리에 실패했습니다.'));
+            .then(res => res.json())
+            .then(() => {
+                updateNotificationBadge(0);
+                loadNotificationsList();
+            })
+            .catch(() => alert('처리에 실패했습니다.'));
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

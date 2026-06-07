@@ -113,13 +113,12 @@
             .then(data => {
                 if (data.message === 'success') {
                     if (data.action === 'login') {
-                        // 로그인 성공
-                        localStorage.setItem('clover_study_user', JSON.stringify(data.user));
+                        // 로그인 성공 - 세션이 자동으로 저장됨
                         alert('로그인되었습니다!');
                         window.location.href = '/';
                     } else if (data.action === 'signup') {
                         // 회원가입 페이지로 이동
-                        localStorage.setItem('signup_email', data.email);
+                        // sessionStorage를 사용하도 되나, 세션 기반으로 동동
                         window.location.href = '/signup';
                     }
                 } else {
@@ -161,7 +160,7 @@
                 const data = await response.json();
                 
                 if (data.message === 'success') {
-                    localStorage.setItem('clover_study_user', JSON.stringify(data.user));
+                    // 세션이 자동으로 저장됨 (HttpOnly 쿠키)
                     alert('로그인되었습니다!');
                     window.location.href = '/';
                 } else {

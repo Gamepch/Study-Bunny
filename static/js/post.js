@@ -3,32 +3,36 @@
  */
 let currentPostData = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     loadEditFormComponent();
     checkLoginStatus();
+    const currentUser = await getCurrentUser();
     if (window.__POST_DATA__) {
         currentPostData = window.__POST_DATA__;
         applyPostMetadata(currentPostData);
-        const currentUser = getCurrentUser();
         if (currentUser && currentUser.username) {
             fetchPostDetail(POST_ID, currentUser.username, true);
         }
     } else {
-        fetchPostDetail(POST_ID);
+        if (currentUser && currentUser.username) {
+            fetchPostDetail(POST_ID, currentUser.username);
+        } else {
+            fetchPostDetail(POST_ID);
+        }
     }
 });
 
 /**
- * Retrieve current logged-in user from localStorage.
- * @returns {Object|null} User object or null if not logged in.
+ * Retrieve current logged-in user from server session.
+ * @returns {Promise<Object|null>} User object or null if not logged in.
  */
-function getCurrentUser() {
-    const saved = localStorage.getItem('clover_study_user');
-    if (!saved) return null;
+async function getCurrentUser() {
     try {
-        return JSON.parse(saved);
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        return data.authenticated ? data.user : null;
     } catch (e) {
-        localStorage.removeItem('clover_study_user');
+        console.error('Auth check error:', e);
         return null;
     }
 }
@@ -50,8 +54,12 @@ function checkLoginStatus() {
  */
 function handleLogout() {
     if (confirm("로그아웃 하시겠어요? 🍀")) {
-        localStorage.removeItem('clover_study_user');
-        location.reload();
+        fetch('/api/logout', { method: 'POST' })
+            .then(() => location.reload())
+            .catch(err => {
+                console.error('Logout error:', err);
+                alert('로그아웃 중 오류가 발생했습니다.');
+            });
     }
 }
 

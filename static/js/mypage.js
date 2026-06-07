@@ -9,10 +9,10 @@ let myPostsServerRendered = false;
 let likedPostsLoaded = false;
 let likedPostsLoading = false;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
     let targetUser = urlParams.get('user');
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
 
     if (!targetUser) {
         if (!user) {
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     targetUsername = targetUser;
     isOwnProfile = Boolean(user && targetUser === user.username);
-    applyMyPageChrome();
+    applyMyPageChrome(user);
     paintProfileFromCacheOrUrl(targetUser, user);
 
     const feedContainer = document.getElementById('mypage-feed-container');
@@ -47,16 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Retrieve current logged-in user from localStorage.
- * @returns {Object|null}
+ * Retrieve current logged-in user from server session.
+ * @returns {Promise<Object|null>}
  */
-function getCurrentUser() {
-    const saved = localStorage.getItem('clover_study_user');
-    if (!saved) return null;
+async function getCurrentUser() {
     try {
-        return JSON.parse(saved);
+        const response = await fetch('/api/auth/check');
+        const data = await response.json();
+        return data.authenticated ? data.user : null;
     } catch (e) {
-        localStorage.removeItem('clover_study_user');
+        console.error('Auth check error:', e);
         return null;
     }
 }
@@ -129,7 +129,7 @@ function updateProfileStats(postCount, likedCount) {
 /**
  * Adjust header chrome for own vs other profiles.
  */
-function applyMyPageChrome() {
+function applyMyPageChrome(currentUser) {
     if (!isOwnProfile) {
         const editBtn = document.getElementById('edit-profile-btn');
         if (editBtn) editBtn.style.display = 'none';
@@ -143,9 +143,8 @@ function applyMyPageChrome() {
         if (myPostsTab) myPostsTab.textContent = '📝 작성한 글';
     } else {
         // Show admin button if user is admin
-        const user = getCurrentUser();
         const adminBtn = document.getElementById('admin-btn');
-        if (adminBtn && user && user.is_admin) {
+        if (adminBtn && currentUser && currentUser.is_admin) {
             adminBtn.style.display = 'block';
         }
         const deleteFooter = document.querySelector('.px-4.py-4.border-t.border-emerald-50');
@@ -359,8 +358,8 @@ function renderPostList(posts) {
 /**
  * Open the profile edit modal and populate with current data.
  */
-function openProfileEditModal() {
-    const user = getCurrentUser();
+async function openProfileEditModal() {
+    const user = await getCurrentUser();
     if (!user) return;
 
     document.getElementById('edit-nickname-input').value = user.nickname;
@@ -393,8 +392,8 @@ function previewProfileImage(event) {
 /**
  * Submit profile changes (nickname and/or profile image) to the server.
  */
-function submitProfileEdit() {
-    const user = getCurrentUser();
+async function submitProfileEdit() {
+    const user = await getCurrentUser();
     if (!user) return;
 
     const nickname = document.getElementById('edit-nickname-input').value.trim();
@@ -416,19 +415,11 @@ function submitProfileEdit() {
         .then(res => res.json())
         .then(data => {
             if (data.message === 'success') {
-                // Preserve is_admin from current user
-                const currentUser = getCurrentUser();
-                const updatedUser = {
-                    ...data.user,
-                    is_admin: currentUser?.is_admin || false
-                };
-                localStorage.setItem('clover_study_user', JSON.stringify(updatedUser));
-
                 alert('프로필이 수정되었습니다! ✨');
                 closeProfileEditModal();
                 myPostsServerRendered = false;
                 likedPostsLoaded = false;
-                location.href = `/mypage?user=${encodeURIComponent(updatedUser.username)}`;
+                location.href = `/mypage?user=${encodeURIComponent(data.user.username)}`;
             } else {
                 alert(data.reason || '프로필 수정에 실패했습니다.');
             }
@@ -442,14 +433,14 @@ function submitProfileEdit() {
 /**
  * 회원탈퇴 함수
  */
-function deleteAccount() {
+async function deleteAccount() {
     const confirmed = confirm('정말 탈퇴하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없습니다.');
     if (!confirmed) return;
 
     const doubleConfirmed = confirm('재확인: 정말 탈퇴하시겠습니까?\n(이 작업은 되돌릴 수 없습니다)');
     if (!doubleConfirmed) return;
 
-    const user = getCurrentUser();
+    const user = await getCurrentUser();
     if (!user) {
         alert('로그인이 필요합니다.');
         location.href = '/login';
@@ -468,7 +459,6 @@ function deleteAccount() {
         .then(res => res.json())
         .then(data => {
             if (data.message === 'success') {
-                localStorage.removeItem('clover_study_user');
                 alert('탈퇴되었습니다. 안녕히 가세요! 🍀');
                 location.href = '/';
             } else {
