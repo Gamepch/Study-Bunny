@@ -115,6 +115,119 @@
         </main>
     </div>
 
+    <!-- 유저 상세 모달 -->
+    <div id="user-detail-modal" class="fixed inset-0 bg-black/50 z-50 items-center justify-center p-4" style="display: none;">
+        <div class="bg-white rounded-3xl shadow-xl w-full max-w-sm mx-auto overflow-hidden flex flex-col" style="max-height: 85vh;">
+            <div class="p-5 border-b border-gray-100 flex items-center gap-3">
+                <div class="profile-img-container" id="detail-profile-img-wrap">
+                    <img id="detail-profile-img" src="" alt="프로필" onerror="this.parentElement.classList.add('empty'); this.style.display='none';">
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-gray-800 truncate" id="detail-nickname"></p>
+                    <p class="text-xs text-gray-500 truncate" id="detail-username"></p>
+                </div>
+                <button onclick="closeUserDetail()" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1">
+                <div class="p-5 space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-emerald-50 rounded-2xl p-3">
+                            <p class="text-[10px] font-bold text-emerald-600 mb-1">📅 가입일</p>
+                            <p class="text-xs font-bold text-gray-700" id="detail-created-at">-</p>
+                        </div>
+                        <div class="bg-blue-50 rounded-2xl p-3">
+                            <p class="text-[10px] font-bold text-blue-600 mb-1">🕐 마지막 로그인</p>
+                            <p class="text-xs font-bold text-gray-700" id="detail-last-login">-</p>
+                        </div>
+                        <div class="bg-purple-50 rounded-2xl p-3">
+                            <p class="text-[10px] font-bold text-purple-600 mb-1">✍️ 작성 글 수</p>
+                            <p class="text-xl font-bold text-gray-800" id="detail-post-count">-</p>
+                        </div>
+                        <div class="bg-red-50 rounded-2xl p-3">
+                            <p class="text-[10px] font-bold text-red-500 mb-1">🚨 신고 횟수</p>
+                            <p class="text-xl font-bold text-gray-800" id="detail-report-count">-</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-2xl p-3">
+                        <p class="text-[10px] font-bold text-gray-500 mb-1">📧 이메일</p>
+                        <p class="text-xs text-gray-700 break-all" id="detail-email">-</p>
+                    </div>
+
+                    <!-- 클로버 물주기 -->
+                    <div class="bg-emerald-50 rounded-2xl p-4">
+                        <p class="text-xs font-bold text-emerald-700 mb-3">🍀 클로버 물주기</p>
+                        <div class="grid grid-cols-3 gap-2 mb-3 text-center">
+                            <div>
+                                <p class="text-[10px] text-gray-500">단계</p>
+                                <p class="text-sm font-bold text-gray-700" id="detail-clover-stage">-</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-500">누적 물</p>
+                                <p class="text-sm font-bold text-gray-700" id="detail-clover-water">-</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-500">대기 중</p>
+                                <p class="text-sm font-bold text-emerald-600" id="detail-clover-pending">-</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="number" id="give-water-amount" min="1" max="100" value="10"
+                                class="flex-1 border border-emerald-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:border-emerald-400">
+                            <button onclick="giveWater()"
+                                class="flex-1 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition active:scale-95">
+                                💧 물 지급
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-bold text-gray-700 mb-2">🚨 신고 이력</p>
+                        <div id="detail-reports-list" class="space-y-2">
+                            <div class="text-center py-4 text-gray-400 text-xs">불러오는 중...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 정지 모달 -->
+    <div id="suspend-modal" class="fixed inset-0 bg-black/50 z-50 items-center justify-center p-4" style="display: none;">
+        <div class="bg-white rounded-3xl shadow-xl w-full max-w-sm p-6 mx-auto">
+            <h3 class="text-base font-bold text-gray-800 mb-1">🚫 계정 정지</h3>
+            <p class="text-sm text-red-500 font-medium mb-4" id="suspend-target-label"></p>
+
+            <div class="mb-4">
+                <label class="text-xs font-bold text-gray-600 block mb-1.5">정지 사유 <span class="text-gray-400 font-normal">(선택)</span></label>
+                <textarea id="suspend-reason-input" rows="3" placeholder="정지 사유를 입력하세요..."
+                    class="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200"></textarea>
+            </div>
+
+            <div class="mb-5">
+                <label class="text-xs font-bold text-gray-600 block mb-1.5">정지 기간 <span class="text-red-400">*</span></label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="selectDuration(1)" data-days="1" class="duration-btn py-2.5 text-xs font-bold border border-gray-200 rounded-xl text-gray-600 transition-all hover:border-red-300 hover:text-red-500">1일</button>
+                    <button onclick="selectDuration(3)" data-days="3" class="duration-btn py-2.5 text-xs font-bold border border-gray-200 rounded-xl text-gray-600 transition-all hover:border-red-300 hover:text-red-500">3일</button>
+                    <button onclick="selectDuration(7)" data-days="7" class="duration-btn py-2.5 text-xs font-bold border border-gray-200 rounded-xl text-gray-600 transition-all hover:border-red-300 hover:text-red-500">7일</button>
+                    <button onclick="selectDuration(14)" data-days="14" class="duration-btn py-2.5 text-xs font-bold border border-gray-200 rounded-xl text-gray-600 transition-all hover:border-red-300 hover:text-red-500">14일</button>
+                    <button onclick="selectDuration(30)" data-days="30" class="duration-btn py-2.5 text-xs font-bold border border-gray-200 rounded-xl text-gray-600 transition-all hover:border-red-300 hover:text-red-500">30일</button>
+                    <button onclick="selectDuration(0)" data-days="0" class="duration-btn py-2.5 text-xs font-bold border border-gray-200 rounded-xl text-gray-600 transition-all hover:border-red-300 hover:text-red-500">영구</button>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="closeSuspendModal()" class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-2xl text-sm font-bold hover:bg-gray-200 transition">취소</button>
+                <button onclick="confirmSuspend()" class="flex-1 py-3 bg-red-500 text-white rounded-2xl text-sm font-bold hover:bg-red-600 transition">정지하기</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Check admin access from server session
         async function checkAdminAccess() {
@@ -249,18 +362,32 @@
                 return;
             }
 
+            window._adminUsersMap = {};
+            users.forEach(u => { window._adminUsersMap[u.username] = u; });
+
             container.innerHTML = users.map(user => `
-                <div class="user-card bg-white rounded-2xl shadow-sm border border-emerald-100 p-4 flex items-center gap-3">
-                    <div class="profile-img-container">
+                <div class="user-card bg-white rounded-2xl shadow-sm border ${user.is_suspended ? 'border-red-200 bg-red-50/30' : 'border-emerald-100'} p-4 flex items-center gap-3 cursor-pointer" id="user-card-${user.username}" onclick="openUserDetail('${user.username}')" data-username="${user.username}">
+                    <div class="profile-img-container ${user.is_suspended ? 'opacity-50' : ''}">
                         <img src="${user.profile_url}" alt="프로필" onerror="this.parentElement.classList.add('empty'); this.style.display='none';">
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                            <p class="font-bold text-gray-800 truncate">${user.nickname}</p>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="font-bold ${user.is_suspended ? 'text-gray-400' : 'text-gray-800'} truncate">${user.nickname}</p>
                             ${user.username === 'admin' ? '<span class="px-2 py-1 bg-red-50 text-red-500 text-[10px] font-bold rounded-full">👑 관리자</span>' : ''}
+                            ${user.is_suspended ? '<span class="px-2 py-1 bg-red-100 text-red-500 text-[10px] font-bold rounded-full">🚫 정지됨</span>' : ''}
                         </div>
                         <p class="text-xs text-gray-600 truncate">@${user.username}</p>
+                        ${user.is_suspended ? `<p class="text-xs text-red-400 mt-0.5 truncate">
+                            ${user.suspend_reason ? user.suspend_reason + ' · ' : ''}${user.suspend_until ? user.suspend_until.substring(0,10) + '까지' : '영구정지'}
+                        </p>` : ''}
                     </div>
+                    ${user.username !== 'admin' ? `
+                    <button onclick="event.stopPropagation(); toggleSuspend('${user.username}', ${user.is_suspended})"
+                        class="flex-shrink-0 px-3 py-1.5 text-xs font-bold rounded-xl transition-all ${user.is_suspended
+                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                            : 'bg-red-50 text-red-500 hover:bg-red-100'}">
+                        ${user.is_suspended ? '✅ 해제' : '🚫 정지'}
+                    </button>` : ''}
                 </div>
             `).join('');
         }
@@ -363,6 +490,176 @@
                 alert('신고 처리 중 오류가 발생했습니다.');
             });
         }
+
+        let suspendTargetUsername = null;
+        let suspendDuration = null;
+
+        function toggleSuspend(username, isSuspended) {
+            if (isSuspended) {
+                if (!confirm(`@${username} 유저의 정지를 해제하시겠어요?`)) return;
+                callToggleSuspend(username, null, null);
+                return;
+            }
+            suspendTargetUsername = username;
+            suspendDuration = null;
+            document.getElementById('suspend-target-label').textContent = `@${username}`;
+            document.getElementById('suspend-reason-input').value = '';
+            document.querySelectorAll('.duration-btn').forEach(btn => {
+                btn.classList.remove('bg-red-500', 'text-white', 'border-red-500');
+                btn.classList.add('border-gray-200', 'text-gray-600');
+            });
+            document.getElementById('suspend-modal').style.display = 'flex';
+        }
+
+        function selectDuration(days) {
+            suspendDuration = days;
+            document.querySelectorAll('.duration-btn').forEach(btn => {
+                const isSelected = parseInt(btn.dataset.days) === days;
+                btn.classList.toggle('bg-red-500', isSelected);
+                btn.classList.toggle('text-white', isSelected);
+                btn.classList.toggle('border-red-500', isSelected);
+                btn.classList.toggle('text-gray-600', !isSelected);
+                btn.classList.toggle('border-gray-200', !isSelected);
+            });
+        }
+
+        function closeSuspendModal() {
+            document.getElementById('suspend-modal').style.display = 'none';
+            suspendTargetUsername = null;
+            suspendDuration = null;
+        }
+
+        async function confirmSuspend() {
+            if (suspendDuration === null) {
+                alert('정지 기간을 선택해주세요.');
+                return;
+            }
+            const reason = document.getElementById('suspend-reason-input').value.trim();
+            await callToggleSuspend(suspendTargetUsername, reason, suspendDuration);
+            closeSuspendModal();
+        }
+
+        async function callToggleSuspend(username, reason, days) {
+            try {
+                const res = await fetch(`/api/admin/users/${username}/toggle-suspend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason, days })
+                });
+                const data = await res.json();
+                if (data.message === 'success') {
+                    loadUsers();
+                } else {
+                    alert(data.reason || '처리에 실패했습니다.');
+                }
+            } catch (e) {
+                alert('오류가 발생했습니다.');
+            }
+        }
+
+        function openUserDetail(username) {
+            const user = (window._adminUsersMap || {})[username];
+            if (!user) return;
+            const modal = document.getElementById('user-detail-modal');
+            const img = document.getElementById('detail-profile-img');
+            const imgWrap = document.getElementById('detail-profile-img-wrap');
+
+            img.src = user.profile_url || '';
+            imgWrap.classList.remove('empty');
+            img.style.display = '';
+            document.getElementById('detail-nickname').textContent = user.nickname || user.username;
+            document.getElementById('detail-username').textContent = '@' + user.username;
+            document.getElementById('detail-created-at').textContent = user.created_at ? user.created_at.substring(0, 10) : '정보 없음';
+            document.getElementById('detail-last-login').textContent = user.last_login ? user.last_login.substring(0, 16) : '정보 없음';
+            document.getElementById('detail-post-count').textContent = user.post_count ?? '-';
+            document.getElementById('detail-report-count').textContent = user.report_count ?? '-';
+            document.getElementById('detail-email').textContent = user.email || '정보 없음';
+            document.getElementById('detail-reports-list').innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">불러오는 중...</div>';
+
+            // 클로버 상태 초기화
+            document.getElementById('detail-clover-stage').textContent = '...';
+            document.getElementById('detail-clover-water').textContent = '...';
+            document.getElementById('detail-clover-pending').textContent = '...';
+            document.getElementById('give-water-amount').value = 10;
+            modal._targetUsername = user.username;
+
+            modal.style.display = 'flex';
+
+            fetch(`/api/admin/users/${user.username}/detail`)
+                .then(r => r.json())
+                .then(data => {
+                    // 클로버 상태
+                    const stageNames = ['씨앗🌱','새싹🌿','어린☘️','클로버🍀','네잎✨🍀'];
+                    const c = data.clover || {};
+                    document.getElementById('detail-clover-stage').textContent = stageNames[c.stage ?? 0];
+                    document.getElementById('detail-clover-water').textContent = (c.water_count ?? 0) + '회';
+                    document.getElementById('detail-clover-pending').textContent = (c.pending_water ?? 0) + '회';
+
+                    // 신고 이력
+                    const list = document.getElementById('detail-reports-list');
+                    if (!data.reports || data.reports.length === 0) {
+                        list.innerHTML = '<div class="text-center py-4 text-gray-400 text-xs">신고 이력이 없습니다.</div>';
+                        return;
+                    }
+                    const statusLabel = { pending: '⏳ 대기', resolved: '✅ 해결', dismissed: '❌ 거절' };
+                    const statusColor = { pending: 'text-yellow-600 bg-yellow-50', resolved: 'text-green-600 bg-green-50', dismissed: 'text-gray-500 bg-gray-100' };
+                    list.innerHTML = data.reports.map(r => `
+                        <div class="border border-gray-100 rounded-xl p-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[10px] font-bold ${statusColor[r.status] || 'text-gray-500 bg-gray-100'} px-2 py-0.5 rounded-full">
+                                    ${statusLabel[r.status] || r.status}
+                                </span>
+                                <span class="text-[10px] text-gray-400">${r.created_at ? r.created_at.substring(0, 10) : ''}</span>
+                            </div>
+                            <p class="text-xs font-bold text-gray-700">${r.target_type === 'post' ? '📝 게시물' : '💬 댓글'} · ${r.reason}</p>
+                            ${r.description ? `<p class="text-[11px] text-gray-500 mt-1">${r.description}</p>` : ''}
+                        </div>
+                    `).join('');
+                })
+                .catch(() => {
+                    document.getElementById('detail-reports-list').innerHTML = '<div class="text-center py-4 text-red-400 text-xs">신고 이력을 불러오지 못했습니다.</div>';
+                });
+        }
+
+        function closeUserDetail() {
+            document.getElementById('user-detail-modal').style.display = 'none';
+        }
+
+        async function giveWater() {
+            const modal = document.getElementById('user-detail-modal');
+            const username = modal._targetUsername;
+            const amount = parseInt(document.getElementById('give-water-amount').value);
+            if (!username || isNaN(amount) || amount <= 0) return;
+
+            const btn = event.currentTarget;
+            btn.disabled = true;
+            btn.textContent = '지급 중...';
+
+            try {
+                const res = await fetch(`/api/admin/users/${username}/give-water`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount }),
+                });
+                const data = await res.json();
+                if (!res.ok) { alert(data.reason || '실패'); return; }
+
+                const stageNames = ['씨앗🌱','새싹🌿','어린☘️','클로버🍀','네잎✨🍀'];
+                document.getElementById('detail-clover-stage').textContent = stageNames[data.stage ?? 0];
+                document.getElementById('detail-clover-water').textContent = (data.water_count ?? 0) + '회';
+                document.getElementById('detail-clover-pending').textContent = (data.pending_water ?? 0) + '회';
+                btn.textContent = '✅ 지급 완료!';
+                setTimeout(() => { btn.textContent = '💧 물 지급'; btn.disabled = false; }, 1500);
+            } catch(e) {
+                alert('오류가 발생했어요.');
+                btn.textContent = '💧 물 지급';
+                btn.disabled = false;
+            }
+        }
+
+        document.getElementById('user-detail-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeUserDetail();
+        });
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {

@@ -305,6 +305,55 @@ def init_db():
     ''')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_focus_date ON focus_records(date, total_seconds DESC)')
 
+    # ── suspension columns migration ─────────────────────────
+    try:
+        conn.execute('ALTER TABLE users ADD COLUMN is_suspended INTEGER NOT NULL DEFAULT 0')
+    except Exception:
+        pass
+    try:
+        conn.execute('ALTER TABLE users ADD COLUMN suspend_reason TEXT')
+    except Exception:
+        pass
+    try:
+        conn.execute('ALTER TABLE users ADD COLUMN suspend_until TEXT')
+    except Exception:
+        pass
+    try:
+        conn.execute('ALTER TABLE users ADD COLUMN last_login TEXT')
+    except Exception:
+        pass
+
+    # ── clover_status ─────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS clover_status (
+            username         TEXT PRIMARY KEY,
+            water_count      INTEGER NOT NULL DEFAULT 0,
+            stage            INTEGER NOT NULL DEFAULT 0,
+            started_at       TEXT NOT NULL,
+            last_watered     TEXT,
+            wilted           INTEGER NOT NULL DEFAULT 0,
+            last_manual_date TEXT,
+            pending_water    INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+        )
+    ''')
+    try:
+        conn.execute('ALTER TABLE clover_status ADD COLUMN pending_water INTEGER NOT NULL DEFAULT 0')
+    except Exception:
+        pass
+
+    # ── clover_cards ──────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS clover_cards (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            username    TEXT NOT NULL,
+            card_number INTEGER NOT NULL,
+            days_taken  INTEGER NOT NULL,
+            earned_at   TEXT NOT NULL,
+            FOREIGN KEY (username) REFERENCES users(username) ON DELETE CASCADE
+        )
+    ''')
+
     # ── indexes ───────────────────────────────────────────────
     conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_category  ON posts(category)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_posts_username  ON posts(username)')
@@ -316,6 +365,7 @@ def init_db():
     conn.execute('CREATE INDEX IF NOT EXISTS idx_reports_status  ON reports(status)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at DESC)')
     conn.execute('CREATE INDEX IF NOT EXISTS idx_post_images     ON post_images(post_id, sort_order)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_clover_cards    ON clover_cards(username, card_number)')
 
     conn.commit()
     conn.close()
@@ -355,6 +405,86 @@ def create_notification(conn, recipient_username, actor_username, actor_nickname
         message,
         get_korean_time().strftime("%Y.%m.%d %H:%M"),
     ))
+
+CLOVER_THRESHOLDS = [0, 10, 30, 60, 100]
+CLOVER_STAGE_NAMES = ['씨앗', '새싹', '어린 클로버', '클로버', '네잎 클로버']
+CLOVER_STAGE_EMOJIS = ['🌱', '🌿', '☘️', '🍀', '✨🍀']
+
+def _calc_clover_stage(water_count):
+    stage = 0
+    for i, t in enumerate(CLOVER_THRESHOLDS):
+        if water_count >= t:
+            stage = i
+    return stage
+
+def add_pending(username, amount, conn=None):
+    """활동으로 획득한 물을 pending에 적립 (클로버에 바로 주지 않음)."""
+    should_close = conn is None
+    if conn is None:
+        conn = get_db_connection()
+    try:
+        now_str = get_korean_time().isoformat()
+        conn.execute('''
+            INSERT INTO clover_status
+                (username, water_count, stage, started_at, pending_water, wilted)
+            VALUES (?, 0, 0, ?, ?, 0)
+            ON CONFLICT(username) DO UPDATE SET pending_water = pending_water + ?
+        ''', (username, now_str, amount, amount))
+        if should_close:
+            conn.commit()
+    finally:
+        if should_close:
+            conn.close()
+
+
+def add_water(username, amount, conn=None):
+    """pending_water를 실제 클로버에 적용. conn을 넘기면 commit은 호출자가 처리."""
+    should_close = conn is None
+    if conn is None:
+        conn = get_db_connection()
+    try:
+        now = get_korean_time()
+        now_str = now.isoformat()
+
+        row = conn.execute(
+            'SELECT * FROM clover_status WHERE username = ?', (username,)
+        ).fetchone()
+
+        if row is None:
+            water_count = amount
+            new_stage = _calc_clover_stage(water_count)
+            conn.execute('''
+                INSERT INTO clover_status
+                    (username, water_count, stage, started_at, last_watered, wilted, last_manual_date)
+                VALUES (?, ?, ?, ?, ?, 0, NULL)
+            ''', (username, water_count, new_stage, now_str, now_str))
+        else:
+            water_count = row['water_count'] + amount
+
+            # 방치 패널티: 48시간 이상 활동 없으면 wilted
+            wilted = 0
+            if row['last_watered']:
+                last = datetime.fromisoformat(row['last_watered'])
+                if (now - last).total_seconds() > 48 * 3600:
+                    wilted = 1
+            if amount > 0:
+                wilted = 0  # 활동 시 즉시 회복
+
+            new_stage = _calc_clover_stage(water_count)
+            conn.execute('''
+                UPDATE clover_status
+                SET water_count = ?, stage = ?, last_watered = ?, wilted = ?
+                WHERE username = ?
+            ''', (water_count, new_stage, now_str, wilted, username))
+
+        if should_close:
+            conn.commit()
+
+        return {'stage': new_stage, 'water_count': water_count}
+    finally:
+        if should_close:
+            conn.close()
+
 
 @app.template_filter('render_content')
 def render_content_filter(text):
@@ -490,6 +620,7 @@ def create_feed():
     post_id = cursor.lastrowid
     for i, url in enumerate(image_urls):
         conn.execute('INSERT INTO post_images (post_id, image_url, sort_order) VALUES (?, ?, ?)', (post_id, url, i))
+    add_pending(username, 5, conn)
     conn.commit()
     conn.close()
     return jsonify({"message": "success"}), 201
@@ -612,7 +743,7 @@ def add_comment(post_id):
         post['title'],
         comment_id,
     )
-
+    add_pending(username, 1, conn)
     conn.commit()
     conn.close()
     return jsonify({"message": "success"}), 201
@@ -654,6 +785,7 @@ def like_post(post_id):
         post['title'],
     )
     conn.execute('UPDATE posts SET likes = likes + 1 WHERE id = ?', (post_id,))
+    add_pending(post['username'], 1, conn)  # 좋아요 받은 글 작성자에게 적립
     conn.commit()
 
     updated_likes = conn.execute('SELECT likes FROM posts WHERE id = ?', (post_id,)).fetchone()['likes']
@@ -1071,15 +1203,17 @@ def get_all_users():
     try:
         conn = get_db_connection()
         
-        # Get all users
         users = conn.execute('''
-            SELECT username, nickname, profile_url
-            FROM users
-            ORDER BY username
+            SELECT u.username, u.nickname, u.profile_url, u.is_suspended, u.suspend_reason, u.suspend_until,
+                   u.email, u.created_at, u.last_login, u.login_method,
+                   (SELECT COUNT(*) FROM posts p WHERE p.username = u.username) AS post_count,
+                   (SELECT COUNT(*) FROM reports r WHERE r.target_username = u.username) AS report_count
+            FROM users u
+            ORDER BY u.username
         ''').fetchall()
-        
+
         conn.close()
-        
+
         return jsonify({
             "users": [dict(u) for u in users]
         }), 200
@@ -1089,6 +1223,74 @@ def get_all_users():
             "error": "Failed to fetch users",
             "detail": str(e)
         }), 500
+
+
+@app.route('/api/admin/users/<username>/detail', methods=['GET'])
+@require_admin
+def get_user_detail(username):
+    try:
+        conn = get_db_connection()
+        reports = conn.execute('''
+            SELECT id, target_type, reason, description, status, created_at, post_id, target_id
+            FROM reports
+            WHERE target_username = ?
+            ORDER BY created_at DESC
+            LIMIT 20
+        ''', (username,)).fetchall()
+        clover = conn.execute(
+            'SELECT stage, water_count, pending_water FROM clover_status WHERE username = ?',
+            (username,)
+        ).fetchone()
+        conn.close()
+        return jsonify({
+            "reports": [dict(r) for r in reports],
+            "clover": dict(clover) if clover else {"stage": 0, "water_count": 0, "pending_water": 0},
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/admin/users/<username>/toggle-suspend', methods=['POST'])
+@require_admin
+def toggle_suspend_user(username):
+    if username == 'admin':
+        return jsonify({"message": "fail", "reason": "관리자 계정은 정지할 수 없습니다."}), 400
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT is_suspended FROM users WHERE username = ?', (username,)).fetchone()
+    if not user:
+        conn.close()
+        return jsonify({"message": "fail", "reason": "사용자를 찾을 수 없습니다."}), 404
+
+    if user['is_suspended']:
+        conn.execute(
+            'UPDATE users SET is_suspended = 0, suspend_reason = NULL, suspend_until = NULL WHERE username = ?',
+            (username,)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "success", "is_suspended": False}), 200
+
+    data = request.get_json() or {}
+    reason = (data.get('reason') or '').strip() or None
+    days = data.get('days')
+
+    suspend_until = None
+    if days is not None:
+        try:
+            days = int(days)
+            if days > 0:
+                suspend_until = (get_korean_time() + timedelta(days=days)).strftime("%Y.%m.%d %H:%M:%S")
+        except (ValueError, TypeError):
+            pass
+
+    conn.execute(
+        'UPDATE users SET is_suspended = 1, suspend_reason = ?, suspend_until = ? WHERE username = ?',
+        (reason, suspend_until, username)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "success", "is_suspended": True}), 200
 
 
 @app.route('/api/mypage/<username>')
@@ -1381,6 +1583,39 @@ def create_report():
         return jsonify({"message": "fail", "reason": "신고 처리 중 오류가 발생했습니다."}), 500
 
 
+@app.route('/api/admin/users/<username>/give-water', methods=['POST'])
+@require_admin
+def admin_give_water(username):
+    """관리자가 특정 유저에게 물(pending) 지급."""
+    data = request.get_json() or {}
+    try:
+        amount = int(data.get('amount', 0))
+    except (ValueError, TypeError):
+        amount = 0
+
+    if amount <= 0 or amount > 100:
+        return jsonify({"message": "fail", "reason": "1~100 사이의 값을 입력해주세요."}), 400
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT username FROM users WHERE username = ?', (username,)).fetchone()
+    if not user:
+        conn.close()
+        return jsonify({"message": "fail", "reason": "사용자를 찾을 수 없습니다."}), 404
+
+    add_pending(username, amount, conn)
+    conn.commit()
+
+    row = conn.execute('SELECT pending_water, water_count, stage FROM clover_status WHERE username = ?', (username,)).fetchone()
+    conn.close()
+
+    return jsonify({
+        "message": "success",
+        "pending_water": row['pending_water'] if row else amount,
+        "water_count": row['water_count'] if row else 0,
+        "stage": row['stage'] if row else 0,
+    }), 200
+
+
 @app.route('/api/admin/reports', methods=['GET'])
 @require_admin
 def get_reports():
@@ -1431,6 +1666,37 @@ def update_report_status(report_id):
     
     return jsonify({"message": "success"}), 200
 
+def get_suspension_error(user, conn):
+    """정지 여부 확인. 기간 만료 시 자동 해제. 차단 메시지 반환, 정상이면 None."""
+    if not user['is_suspended']:
+        return None
+    suspend_until = user['suspend_until']
+    if suspend_until:
+        try:
+            until_dt = datetime.strptime(suspend_until, "%Y.%m.%d %H:%M:%S")
+            if get_korean_time().replace(tzinfo=None) > until_dt:
+                conn.execute(
+                    'UPDATE users SET is_suspended = 0, suspend_reason = NULL, suspend_until = NULL WHERE username = ?',
+                    (user['username'],)
+                )
+                conn.commit()
+                return None
+        except Exception:
+            pass
+        reason = user['suspend_reason'] or ''
+        lines = ["정지된 계정입니다."]
+        if reason:
+            lines.append(f"사유: {reason}")
+        lines.append(f"정지 해제일: {suspend_until[:10]}")
+        return "\n".join(lines)
+    reason = user['suspend_reason'] or ''
+    lines = ["영구 정지된 계정입니다."]
+    if reason:
+        lines.append(f"사유: {reason}")
+    lines.append("관리자에게 문의하세요.")
+    return "\n".join(lines)
+
+
 @app.route('/api/login', methods=['POST'])
 def login():
     """
@@ -1446,16 +1712,23 @@ def login():
     
     conn = get_db_connection()
     user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-    conn.close()
-    
+
     if user and check_password_hash(user['password'], password):
+        suspension_error = get_suspension_error(user, conn)
+        if suspension_error:
+            conn.close()
+            return jsonify({"message": "fail", "reason": suspension_error}), 403
+        conn.execute('UPDATE users SET last_login = ? WHERE username = ?',
+                     (get_korean_time().strftime('%Y-%m-%d %H:%M:%S'), user['username']))
+        conn.commit()
+        conn.close()
         # 로그인 성공: 세션에 사용자 정보 저장
         session['username'] = user['username']
         session['nickname'] = user['nickname']
         session['profile_url'] = user['profile_url']
         session['login_method'] = user['login_method']
         session.permanent = False
-        
+
         return jsonify({
             "message": "success",
             "user": {
@@ -1466,8 +1739,8 @@ def login():
                 "login_method": "local"
             }
         }), 200
-    else:
-        return jsonify({"message": "fail", "reason": "아이디 또는 비밀번호가 틀렸습니다."}), 401
+    conn.close()
+    return jsonify({"message": "fail", "reason": "아이디 또는 비밀번호가 틀렸습니다."}), 401
 
 
 @app.route('/auth/google/init-signup', methods=['POST'])
@@ -1511,16 +1784,22 @@ def google_auth_callback():
             return jsonify({"message": "fail", "reason": "구글 인증 정보가 불완전합니다."}), 400
         
         conn = get_db_connection()
-        
+
         # 기존 사용자 확인 (구글 ID로)
         existing_user = conn.execute(
-            'SELECT * FROM users WHERE google_id = ?', 
+            'SELECT * FROM users WHERE google_id = ?',
             (google_id,)
         ).fetchone()
-        
-        conn.close()
-        
+
         if existing_user:
+            suspension_error = get_suspension_error(existing_user, conn)
+            if suspension_error:
+                conn.close()
+                return jsonify({"message": "fail", "reason": suspension_error}), 403
+            conn.execute('UPDATE users SET last_login = ? WHERE username = ?',
+                         (get_korean_time().strftime('%Y-%m-%d %H:%M:%S'), existing_user['username']))
+            conn.commit()
+            conn.close()
             # 경로 B: 기존 사용자 로그인 (비밀번호 입력 없음)
             # 세션에 사용자 정보 저장 (보안 강화)
             session['username'] = existing_user['username']
@@ -1528,7 +1807,7 @@ def google_auth_callback():
             session['profile_url'] = existing_user['profile_url']
             session['login_method'] = existing_user['login_method']
             session.permanent = False
-            
+
             return jsonify({
                 "message": "success",
                 "action": "login",
@@ -1541,6 +1820,7 @@ def google_auth_callback():
                 }
             }), 200
         else:
+            conn.close()
             # 새로운 사용자: 회원가입 프로세스로 진행
             # 세션에 임시 저장
             session['temp_google_info'] = {
@@ -1548,7 +1828,7 @@ def google_auth_callback():
                 'email': email
             }
             session.permanent = False
-            
+
             return jsonify({
                 "message": "success",
                 "action": "signup",
@@ -1753,6 +2033,12 @@ def sync_focus():
     today = datetime.now(kst).strftime('%Y-%m-%d')
 
     conn = get_db_connection()
+    prev = conn.execute(
+        'SELECT sessions FROM focus_records WHERE username = ? AND date = ?',
+        (username, today)
+    ).fetchone()
+    prev_sessions = prev['sessions'] if prev else 0
+
     conn.execute('''
         INSERT INTO focus_records (username, date, total_seconds, sessions)
         VALUES (?, ?, ?, ?)
@@ -1760,6 +2046,11 @@ def sync_focus():
             total_seconds = MAX(total_seconds, excluded.total_seconds),
             sessions      = MAX(sessions,      excluded.sessions)
     ''', (username, today, total_seconds, sessions))
+
+    new_sessions = max(0, sessions - prev_sessions)
+    if new_sessions > 0:
+        add_pending(username, new_sessions * 3, conn)
+
     conn.commit()
     conn.close()
 
@@ -1839,6 +2130,124 @@ def focus_leaderboard():
         'in_top5': in_top5,
         'current_username': current_username,
     })  # top5 key 이름은 하위 호환 유지
+
+
+@app.route('/api/clover')
+def get_clover():
+    """내 클로버 상태 + 카드 목록 반환."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    conn = get_db_connection()
+    row = conn.execute('SELECT * FROM clover_status WHERE username = ?', (username,)).fetchone()
+    cards = conn.execute(
+        'SELECT * FROM clover_cards WHERE username = ? ORDER BY card_number',
+        (username,)
+    ).fetchall()
+    conn.close()
+
+    now = get_korean_time()
+    if row is None:
+        return jsonify({
+            'username': username,
+            'water_count': 0, 'stage': 0, 'wilted': False,
+            'next_threshold': CLOVER_THRESHOLDS[1],
+            'hours_idle': 0, 'cards': [], 'pending_water': 0,
+        })
+
+    # 방치 시간 계산
+    hours_idle = 0
+    if row['last_watered']:
+        last = datetime.fromisoformat(row['last_watered'])
+        hours_idle = (now - last).total_seconds() / 3600
+
+    stage = row['stage']
+    water = row['water_count']
+    next_threshold = CLOVER_THRESHOLDS[min(stage + 1, 4)] if stage < 4 else CLOVER_THRESHOLDS[4]
+
+    return jsonify({
+        'username': username,
+        'water_count': water,
+        'stage': stage,
+        'wilted': bool(row['wilted']) or hours_idle > 48,
+        'next_threshold': next_threshold,
+        'hours_idle': round(hours_idle, 1),
+        'pending_water': row['pending_water'],
+        'cards': [dict(c) for c in cards],
+    })
+
+
+@app.route('/api/clover/water', methods=['POST'])
+def manual_water():
+    """적립된 pending_water를 클로버에 실제로 적용."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    conn = get_db_connection()
+    row = conn.execute('SELECT pending_water FROM clover_status WHERE username = ?', (username,)).fetchone()
+    pending = row['pending_water'] if row else 0
+
+    if pending <= 0:
+        conn.close()
+        return jsonify({'error': '아직 모인 물이 없어요! 글 작성·댓글·포모도로를 해보세요 🌱'}), 400
+
+    result = add_water(username, pending, conn)
+
+    conn.execute('UPDATE clover_status SET pending_water = 0 WHERE username = ?', (username,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({**result, 'pending': 0, 'message': f'💧 물주기 완료! (+{pending})'}), 200
+
+
+@app.route('/api/clover/card', methods=['POST'])
+def save_clover_card():
+    """네잎 클로버 카드 저장 후 리셋."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    conn = get_db_connection()
+    row = conn.execute('SELECT * FROM clover_status WHERE username = ?', (username,)).fetchone()
+
+    if not row or row['stage'] < 4:
+        conn.close()
+        return jsonify({'error': '아직 네잎 클로버가 아니에요!'}), 400
+
+    now = get_korean_time()
+    now_str = now.isoformat()
+
+    started_at = datetime.fromisoformat(row['started_at'])
+    days_taken = max(1, (now - started_at).days + 1)
+
+    card_count = conn.execute(
+        'SELECT COUNT(*) as cnt FROM clover_cards WHERE username = ?', (username,)
+    ).fetchone()['cnt']
+    card_number = card_count + 1
+
+    conn.execute('''
+        INSERT INTO clover_cards (username, card_number, days_taken, earned_at)
+        VALUES (?, ?, ?, ?)
+    ''', (username, card_number, days_taken, now_str))
+
+    # 리셋
+    conn.execute('''
+        UPDATE clover_status
+        SET water_count = 0, stage = 0, started_at = ?, last_watered = ?, wilted = 0
+        WHERE username = ?
+    ''', (now_str, now_str, username))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        'card_number': card_number,
+        'days_taken': days_taken,
+        'earned_at': now.strftime('%Y.%m.%d'),
+        'message': '🍀 카드가 저장됐어요!',
+    }), 200
 
 
 @app.route('/ads.txt')

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>클로버 스터디 - 한정판 홀로그램 카드</title>
+    <style>
+        /* 배경 설정 (카드가 돋보이도록 차분한 민트색) */
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f9f4;
+            font-family: 'Apple SD Gothic Neo', sans-serif;
+            overflow: hidden;
+        }
+
+        /* 1. 카드가 배치될 3D 공간 설정 */
+        .card-container {
+            perspective: 1000px; /* 원근감 */
+        }
+
+        /* 2. 카드 본체 스타일 */
+        .rare-card {
+            position: relative;
+            width: 260px;
+            height: 360px;
+            background-color: #fff; /* 카드 기본 색상 */
+            border-radius: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            
+            overflow: hidden; /* 내부 레이어가 카드 밖으로 안 나가게 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            
+            /* 호버 효과 전환속도 */
+            transition: transform 0.1s ease, box-shadow 0.4s ease;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        /* 호버 시 테두리 빛 및 그림자 강화 */
+        .rare-card:hover {
+            box-shadow: 0 20px 45px rgba(45, 163, 84, 0.15);
+            border: 2px solid rgba(60, 208, 112, 0.5);
+        }
+
+        /* 3. [핵심] 홀로그램 레이어 (포켓몬 카드 느낌의 박) */
+        .card-holo {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            
+            /* 무지개빛 사선 패턴 그라디언트 (가볍고 쨍하게 수정) */
+            background-image: linear-gradient(
+                110deg,
+                rgba(255, 182, 193, 0) 10%,   /* Pink */
+                rgba(255, 255, 224, 0.2) 20%, /* Yellow */
+                rgba(224, 255, 255, 0.2) 30%, /* Cyan */
+                rgba(182, 193, 255, 0) 40%,  /* Blue */
+                rgba(255, 182, 193, 0) 50%
+            );
+            background-size: 200% 200%; /* 패턴이 움직일 여백 제공 */
+            background-position: 50% 50%;
+            
+            /* [치트키] 겹쳐지는 빛을 극단적으로 밝게 만듦 */
+            mix-blend-mode: color-dodge; 
+            opacity: 0.5; /* 기본 상태는 은은하게 */
+            transition: opacity 0.4s ease, background-position 0.1s ease;
+        }
+
+        /* 4. [핵심] 강렬한 직사광선(Glare) 효과 */
+        .card-glare {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            
+            /* 흰색 스포트라이트 */
+            background: radial-gradient(
+                circle at 50% 50%, 
+                rgba(255, 255, 255, 0.8) 0%, 
+                rgba(255, 255, 255, 0) 60%
+            );
+            mix-blend-mode: overlay; /* 뒷 배경색과 부드럽게 합성 */
+            opacity: 0; /* 평소엔 안 보임 */
+            transition: opacity 0.4s ease;
+        }
+
+        /* 호버 시 홀로그램 및 직사광선 활성화 */
+        .rare-card:hover .card-holo {
+            opacity: 1; /* 쨍하게 */
+        }
+        .rare-card:hover .card-glare {
+            opacity: 1;
+        }
+
+        /* 내부 콘텐츠 (선명한 프리미엄 클로버) */
+        .clover-logo {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 30px;
+            filter: drop-shadow(0 4px 10px rgba(45, 163, 84, 0.2));
+            transform: translateZ(30px); /* 3D로 살짝 튀어나오게 */
+        }
+
+        .card-info {
+            text-align: center;
+            color: #2da354;
+            transform: translateZ(20px); /* 3D */
+        }
+
+        .card-rarity {
+            font-size: 10px;
+            letter-spacing: 2px;
+            font-weight: 800;
+            border: 1px solid #2da354;
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+
+        .card-title {
+            margin: 10px 0 5px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-container">
+        <div class="rare-card" id="card">
+            <div class="card-holo" id="holo"></div>
+            <div class="card-glare" id="glare"></div>
+            
+            <svg class="clover-logo" viewBox="0 0 24 24" fill="#2da354">
+                <path d="M12 11.5c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5.7-1.5 1.5-1.5 1.5.7 1.5 1.5zm4.5 0c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5.7-1.5 1.5-1.5 1.5.7 1.5 1.5z"/>
+                <path d="M12 2C9.5 2 7.5 4 7.5 6.5c0 1.5.8 2.9 2 3.7-1.2.8-2 2.2-2 3.7 0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5c0-1.5-.8-2.9-2-3.7 1.2-.8 2-2.2 2-3.7C16.5 4 14.5 2 12 2zm-1.5 4.5c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5zm1.5 11c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zm3.5-3.5c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5.7-1.5 1.5-1.5 1.5.7 1.5 1.5zm-5 0c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5.7-1.5 1.5-1.5 1.5.7 1.5 1.5z" />
+                <path d="M11.5 18c0 2 1 3.5 2.5 3.5.3 0 .5.2.5.5s-.2.5-.5.5c-2 0-3.5-1.8-3.5-4.5 0-.3.2-.5.5-.5s.5.2.5.5z" fill="#16a34a"/>
+            </svg>
+            <div class="card-info">
+                <span class="card-rarity">LIMITED EDITION</span>
+                <div class="card-title">오늘의 클로버</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const card = document.getElementById('card');
+        const holo = document.getElementById('holo');
+        const glare = document.getElementById('glare');
+
+        // 상대 좌표 계산 자바스크립트
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left; 
+            const y = e.clientY - rect.top;  
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            // 1) 카드 기울기 계산 (3D 회전)
+            const rotateX = (centerY - y) / 10; // 기울기 강도
+            const rotateY = (x - centerX) / 10;
+            
+            // 2) [핵심] 홀로그램 패턴 및 직사광선 위치 계산 (마우스 좌표와 연동)
+            // 마우스가 X축 0%에 있을 때 패턴은 100% 위치로 가게 하여 움직임 극대화
+            const holoX = 100 - (x / rect.width) * 100;
+            const holoY = 100 - (y / rect.height) * 100;
+            
+            // CSS 적용
+            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            
+            // 홀로그램 사선 패턴 이동
+            holo.style.backgroundPosition = `${holoX}% ${holoY}%`;
+            
+            // 흰색 스포트라이트(Glare)가 마우스 커서를 따라다니게 함
+            glare.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 60%)`;
+        });
+
+        // 리셋 효과
+        card.addEventListener('mouseleave', () => {
+            // 부드러운 전환 추가
+            card.style.transition = 'transform 0.5s ease, box-shadow 0.5s ease';
+            card.style.transform = 'rotateX(0deg) rotateY(0deg)';
+            
+            // 홀로그램 및 직사광선 원위치로 은은하게 복귀
+            holo.style.transition = 'opacity 0.4s ease, background-position 0.5s ease';
+            holo.style.backgroundPosition = '50% 50%';
+        });
+
+        card.addEventListener('mouseenter', () => {
+            // 반응성을 위해 움직일 땐 전환 제거
+            card.style.transition = 'transform 0.1s ease, box-shadow 0.4s ease';
+            holo.style.transition = 'opacity 0.4s ease, background-position 0.1s ease';
+        });
+    </script>
+</body>
+</html>
