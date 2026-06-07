@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     isOwnProfile = Boolean(user && targetUser === user.username);
     applyMyPageChrome(user);
     paintProfileFromCacheOrUrl(targetUser, user);
+    loadStreak(targetUser);
 
     const feedContainer = document.getElementById('mypage-feed-container');
     myPostsServerRendered = feedContainer && feedContainer.dataset.serverRendered === 'true';
@@ -312,7 +313,7 @@ function buildPostItemHtml(post, index, total) {
                     ${post.title}
                     <span class="text-emerald-500 text-xs ml-1">[${post.comment_count || 0}]</span>
                 </h2>
-                <p class="text-xs text-gray-500 mb-2 truncate">${post.content}</p>
+                <p class="text-xs text-gray-500 mb-2 truncate">${(post.content || '').replace(/\[focus:\d+:\d+\]\n?/g, '')}</p>
                 <div class="flex items-center text-[11px] text-gray-400 space-x-2">
                     <div class="flex items-center">
                         <img src="${post.profile_url || 'https://placehold.co/100x100/ffb6c1/ffffff?text=Me'}" alt="프로필" class="w-4 h-4 rounded-full mr-1 object-cover" loading="lazy" decoding="async">
@@ -427,6 +428,142 @@ async function submitProfileEdit() {
             console.error('Profile Update Error:', error);
             alert('프로필 수정 중 문제가 발생했습니다.');
         });
+}
+
+// ── Streak & Grass Calendar ───────────────────────────────────
+
+let postActivityMap  = {};
+let pomActivityMap   = {};
+let currentStreakTab = 'all';
+
+function toISODate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function mergedActivityMap() {
+    const m = {};
+    Object.entries(postActivityMap).forEach(([d, n]) => { m[d] = (m[d] || 0) + n; });
+    Object.entries(pomActivityMap).forEach(([d, n])  => { m[d] = (m[d] || 0) + n; });
+    return m;
+}
+
+async function loadStreak(username) {
+    const loadingEl = document.getElementById('streak-loading');
+
+    // 포모도로 히스토리 (localStorage)
+    const histKey = `pomodoro_${username}_history`;
+    let pomHistory = {};
+    try { pomHistory = JSON.parse(localStorage.getItem(histKey) || '{}'); } catch {}
+
+    // 공부기록 포스트 날짜 (서버 API)
+    let postDates = new Set();
+    try {
+        const res = await fetch(`/api/streak/${encodeURIComponent(username)}`);
+        const data = await res.json();
+        (data.study_dates || []).forEach(d => postDates.add(d));
+    } catch {}
+
+    // 소스별로 분리 저장
+    postActivityMap = {};
+    pomActivityMap  = {};
+    postDates.forEach(d => { postActivityMap[d] = (postActivityMap[d] || 0) + 1; });
+    Object.entries(pomHistory).forEach(([d, v]) => {
+        pomActivityMap[d] = (pomActivityMap[d] || 0) + (v.sessions || 0);
+    });
+
+    if (loadingEl) loadingEl.textContent = '';
+
+    switchStreakTab('post');
+}
+
+function switchStreakTab(tab) {
+    currentStreakTab = tab;
+    ['post', 'pom'].forEach(t => {
+        const btn = document.getElementById(`streak-tab-${t}`);
+        if (btn) btn.className = `streak-tab-btn ${t === tab ? 'streak-tab-active' : 'streak-tab-inactive'}`;
+    });
+    const map = tab === 'post' ? postActivityMap : pomActivityMap;
+    renderStreakStats(calculateStreaks(map));
+    renderStreakCalendar(map);
+}
+
+function calculateStreaks(activityMap) {
+    const dayMs = 86400000;
+    const today = toISODate(new Date());
+
+    // 현재 스트릭: 오늘부터 거슬러 올라가며 연속 체크
+    let current = 0;
+    const d = new Date(today);
+    while (activityMap[toISODate(d)]) {
+        current++;
+        d.setDate(d.getDate() - 1);
+    }
+
+    // 최장 스트릭 및 총 공부일
+    const sortedDates = Object.keys(activityMap).sort();
+    const total = sortedDates.length;
+    let longest = 0;
+    let run = 0;
+    for (let i = 0; i < sortedDates.length; i++) {
+        if (i === 0) {
+            run = 1;
+        } else {
+            const prev = new Date(sortedDates[i - 1]);
+            const curr = new Date(sortedDates[i]);
+            run = (curr - prev) / dayMs === 1 ? run + 1 : 1;
+        }
+        longest = Math.max(longest, run);
+    }
+
+    return { current, longest, total };
+}
+
+function renderStreakStats({ current, longest, total }) {
+    const el = id => document.getElementById(id);
+    if (el('streak-current')) {
+        el('streak-current').textContent = current;
+        el('streak-current').style.color =
+            current >= 7 ? '#f59e0b' : current >= 3 ? '#10b981' : '#34d399';
+    }
+    if (el('streak-longest')) el('streak-longest').textContent = longest;
+    if (el('streak-total'))   el('streak-total').textContent   = total;
+}
+
+function renderStreakCalendar(activityMap) {
+    const grid = document.getElementById('grass-grid');
+    if (!grid) return;
+
+    // 오늘 기준 이번주 토요일까지, 16주(112일) 표시
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + (6 - today.getDay())); // 이번주 토요일
+
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 7 * 16 + 1); // 16주 전 일요일
+
+    const todayISO = toISODate(today);
+    const cells = [];
+    const d = new Date(startDate);
+    while (d <= endDate) {
+        cells.push(toISODate(d));
+        d.setDate(d.getDate() + 1);
+    }
+
+    function getColor(n) {
+        if (!n) return '#f0fdf4';
+        if (n === 1) return '#a7f3d0';
+        if (n <= 3)  return '#34d399';
+        if (n <= 6)  return '#059669';
+        return '#065f46';
+    }
+
+    grid.innerHTML = cells.map(dateStr => {
+        const n = activityMap[dateStr] || 0;
+        const isToday = dateStr === todayISO;
+        const unit = currentStreakTab === 'post' ? '개' : '세션';
+        const tip = n > 0 ? `${dateStr}: ${n}${unit}` : dateStr;
+        return `<div class="grass-cell${isToday ? ' grass-today' : ''}" style="background:${getColor(n)};" title="${tip}"></div>`;
+    }).join('');
 }
 
 /**

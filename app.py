@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import sqlite3
 from functools import wraps
@@ -329,6 +330,38 @@ def create_notification(conn, recipient_username, actor_username, actor_nickname
         message,
         get_korean_time().strftime("%Y.%m.%d %H:%M"),
     ))
+
+@app.template_filter('render_content')
+def render_content_filter(text):
+    """[focus:sessions:totalSec] 마커를 스타일 배지 HTML로 변환 후 줄바꿈 처리."""
+    def to_badge(m):
+        sessions  = int(m.group(1))
+        total_sec = int(m.group(2))
+        h  = total_sec // 3600
+        mn = (total_sec % 3600) // 60
+        time_str = (f"{h}시간 {mn}분" if h > 0 and mn > 0
+                    else f"{h}시간" if h > 0
+                    else f"{mn}분")
+        return (
+            f'<div class="focus-badge-block">'
+            f'<span class="focus-badge-icon">🍅</span>'
+            f'<div class="focus-badge-info">'
+            f'<span class="focus-badge-label">오늘의 집중 기록</span>'
+            f'<span class="focus-badge-value">{time_str} · {sessions}세션</span>'
+            f'</div></div>'
+        )
+    # 글 맨 앞에 위치한 마커만 변환 (중간에 직접 입력한 경우 배지로 렌더링하지 않음)
+    text = re.sub(r'^\[focus:(\d+):(\d+)\]\n?', to_badge, text)
+    text = text.replace('\n', '<br>')
+    return text
+
+
+@app.template_filter('strip_focus')
+def strip_focus_filter(text):
+    """목록 미리보기용: [focus:N:N] 마커를 완전히 제거."""
+    if not text:
+        return text
+    return re.sub(r'\[focus:\d+:\d+\]\n?', '', text)
 
 with app.app_context():
     init_db()
@@ -1577,6 +1610,31 @@ def check_auth():
             }
         }), 200
     return jsonify({"authenticated": False}), 200
+
+@app.route('/timer')
+def timer_page():
+    return render_template('timer.html')
+
+@app.route('/api/streak/<username>')
+def get_streak_data(username):
+    """공부기록 게시글 날짜 목록 반환 (잔디 캘린더용)"""
+    conn = get_db_connection()
+    posts = conn.execute(
+        "SELECT date FROM posts WHERE username = ? AND category = '공부기록'",
+        (username,)
+    ).fetchall()
+    conn.close()
+
+    study_dates = set()
+    for post in posts:
+        try:
+            date_part = (post['date'] or '').split(' ')[0]  # '2026.06.07'
+            if len(date_part) >= 10:
+                study_dates.add(date_part.replace('.', '-'))  # '2026-06-07'
+        except Exception:
+            pass
+
+    return jsonify({'study_dates': sorted(study_dates)})
 
 @app.route('/ads.txt')
 def ads():

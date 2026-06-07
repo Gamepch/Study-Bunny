@@ -60,7 +60,7 @@
                 data-ad-width = "320"
                 data-ad-height = "50"></ins>
                 <script type="text/javascript" src="//t1.kakaocdn.net/kas/static/ba.min.js" async></script>
-                {{ post.content|replace('\n', '<br>')|safe }}
+                {{ post.content|render_content|safe }}
             </div>
 
             {% if post.image_url %}

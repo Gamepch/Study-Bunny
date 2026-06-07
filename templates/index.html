@@ -215,7 +215,12 @@
 
                 <div id="form-container" class="overflow-y-auto pr-2 custom-scrollbar flex-1"></div>
 
-                <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end space-x-3">
+                <div class="mt-6 pt-4 border-t border-gray-100 flex items-center gap-2">
+                    <button onclick="insertFocusBadge()" id="focus-badge-btn"
+                        class="px-3 py-3 rounded-2xl text-emerald-600 font-bold text-sm hover:bg-emerald-50 transition-colors border border-emerald-100 flex items-center gap-1.5 shrink-0">
+                        ⏱ <span class="hidden sm:inline">집중 시간</span>
+                    </button>
+                    <div class="flex-1"></div>
                     <button onclick="saveDraft()"
                         class="px-6 py-3.5 rounded-2xl text-gray-500 font-bold hover:bg-gray-100 transition-colors">임시저장</button>
                     <button onclick="submitPost()"
@@ -308,6 +313,9 @@
         </button>
         <button class="fab-menu-item" id="fab-item-cert" onclick="openWriteModal('certification')">
             <span style="font-size:18px;">📸</span> 공부 인증 업로드
+        </button>
+        <button class="fab-menu-item" onclick="window.location.href='/timer'">
+            <span style="font-size:18px;">⏱</span> 포모도로 타이머
         </button>
     </div>
 

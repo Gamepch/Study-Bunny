@@ -13,6 +13,7 @@ let currentUser = null;
 let currentAuthMode = 'login';          // 'login' | 'signup'
 let fabOpen = false;
 let lastScreenSize = window.innerWidth <= 400 ? 'mobile' : 'desktop';
+let focusBadgeData = null;              // { sessions, totalSec } | null
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js')
@@ -274,7 +275,7 @@ function renderCertFeeds(feeds) {
                         <span>❤️ ${feed.likes || 0}</span>
                         <span>💬 ${feed.comment_count || 0}</span>
                     </div>
-                    <p class="cert-card-preview">${escapeHtml(feed.content || '')}</p>
+                    <p class="cert-card-preview">${escapeHtml((feed.content || '').replace(/\[focus:\d+:\d+\]\n?/g, ''))}</p>
                 </div>
             </div>`;
     }).join('');
@@ -558,6 +559,59 @@ function clearDraft() {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  FOCUS BADGE
+// ═══════════════════════════════════════════════════════════
+
+function insertFocusBadge() {
+    const username   = currentUser?.username || 'guest';
+    const pfx        = `pomodoro_${username}_`;
+    const today      = new Date().toLocaleDateString('ko-KR');
+    const savedDate  = localStorage.getItem(pfx + 'date');
+    const sessions   = parseInt(localStorage.getItem(pfx + 'sessions') || '0');
+    const totalSec   = parseInt(localStorage.getItem(pfx + 'total')    || '0');
+
+    if (savedDate !== today || sessions === 0) {
+        alert('오늘의 포모도로 기록이 없어요!\n타이머를 먼저 사용해보세요. ⏱');
+        return;
+    }
+
+    focusBadgeData = { sessions, totalSec };
+
+    const h   = Math.floor(totalSec / 3600);
+    const m   = Math.floor((totalSec % 3600) / 60);
+    const timeStr = (h > 0 && m > 0) ? `${h}시간 ${m}분`
+                  : h > 0             ? `${h}시간`
+                                      : `${m}분`;
+
+    const preview   = document.getElementById('focus-badge-preview');
+    const valueSpan = document.getElementById('focus-badge-preview-value');
+    if (preview && valueSpan) {
+        valueSpan.textContent = `${timeStr} · ${sessions}세션`;
+        preview.classList.remove('hidden');
+    }
+
+    // 버튼 활성 표시
+    const btn = document.getElementById('focus-badge-btn');
+    if (btn) {
+        btn.style.background   = '#d1fae5';
+        btn.style.borderColor  = '#34d399';
+        btn.style.color        = '#065f46';
+    }
+}
+
+function removeFocusBadge() {
+    focusBadgeData = null;
+    const preview = document.getElementById('focus-badge-preview');
+    if (preview) preview.classList.add('hidden');
+    const btn = document.getElementById('focus-badge-btn');
+    if (btn) {
+        btn.style.background  = '';
+        btn.style.borderColor = '';
+        btn.style.color       = '';
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
 //  SUBMIT POST
 // ═══════════════════════════════════════════════════════════
 
@@ -569,8 +623,13 @@ function submitPost() {
 
     const category  = document.getElementById('modal-category')?.value;
     const title     = document.getElementById('modal-title-input')?.value;
-    const content   = document.getElementById('modal-content-input')?.value;
+    let   content   = document.getElementById('modal-content-input')?.value;
     const imageFile = document.getElementById('modal-image-input')?.files[0];
+
+    // 포모도로 배지 마커 삽입
+    if (focusBadgeData) {
+        content = `[focus:${focusBadgeData.sessions}:${focusBadgeData.totalSec}]\n${content}`;
+    }
 
     if (!title?.trim() || !content?.trim()) {
         alert('제목과 내용을 모두 입력해주세요! 🍀');
@@ -595,6 +654,7 @@ function submitPost() {
             if (data.message === 'success') {
                 alert('새 글이 등록되었습니다! 🎉');
                 clearDraft();
+                focusBadgeData = null;
                 closeWriteModal();
                 fetchFeeds();
             }
