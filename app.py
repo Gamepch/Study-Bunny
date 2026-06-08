@@ -505,7 +505,7 @@ def render_content_filter(text):
             f'<span class="focus-badge-icon">🍅</span>'
             f'<div class="focus-badge-info">'
             f'<span class="focus-badge-label">오늘의 집중 기록</span>'
-            f'<span class="focus-badge-value">{time_str} · {sessions}세션</span>'
+            f'<span class="focus-badge-value">{time_str}</span>'
             f'</div></div>'
         )
     # 글 맨 앞에 위치한 마커만 변환 (중간에 직접 입력한 경우 배지로 렌더링하지 않음)
@@ -2032,15 +2032,13 @@ def sync_focus():
 
     data = request.get_json(silent=True) or {}
     total_seconds = data.get('total_seconds', 0)
-    sessions      = data.get('sessions', 0)
 
     try:
         total_seconds = int(total_seconds)
-        sessions      = int(sessions)
     except (ValueError, TypeError):
         return jsonify({'error': 'invalid data'}), 400
 
-    if total_seconds < 0 or sessions < 0:
+    if total_seconds < 0:
         return jsonify({'error': 'invalid data'}), 400
 
     username = session['username']
@@ -2049,22 +2047,24 @@ def sync_focus():
 
     conn = get_db_connection()
     prev = conn.execute(
-        'SELECT sessions FROM focus_records WHERE username = ? AND date = ?',
+        'SELECT total_seconds FROM focus_records WHERE username = ? AND date = ?',
         (username, today)
     ).fetchone()
-    prev_sessions = prev['sessions'] if prev else 0
+    prev_seconds = prev['total_seconds'] if prev else 0
 
     conn.execute('''
         INSERT INTO focus_records (username, date, total_seconds, sessions)
-        VALUES (?, ?, ?, ?)
+        VALUES (?, ?, ?, 0)
         ON CONFLICT(username, date) DO UPDATE SET
-            total_seconds = MAX(total_seconds, excluded.total_seconds),
-            sessions      = MAX(sessions,      excluded.sessions)
-    ''', (username, today, total_seconds, sessions))
+            total_seconds = MAX(total_seconds, excluded.total_seconds)
+    ''', (username, today, total_seconds))
 
-    new_sessions = max(0, sessions - prev_sessions)
-    if new_sessions > 0:
-        add_pending(username, new_sessions * 3, conn)
+    # 5분당 물 1개 (분당 0.2개)
+    prev_water = prev_seconds // 300
+    new_water  = total_seconds // 300
+    earned = max(0, new_water - prev_water)
+    if earned > 0:
+        add_pending(username, earned, conn)
 
     conn.commit()
     conn.close()
@@ -2285,6 +2285,10 @@ def save_clover_card():
 @app.route('/ads.txt')
 def ads():
     return send_file('ads.txt')
+
+@app.route('/llms.txt')
+def llms():
+    return send_file('static/llms.txt', mimetype='text/plain')
 
 if __name__ == '__main__':
     init_db()

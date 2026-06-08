@@ -15,151 +15,232 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        .mode-btn { flex: 1; padding: 8px 0; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: background 0.2s, color 0.2s, box-shadow 0.2s; }
-        .duration-btn { padding: 7px 14px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: background 0.2s, color 0.2s; }
-        #progress-ring { transition: stroke-dashoffset 1s linear, stroke 0.4s ease; }
+        /* ── Base ── */
+        body { transition: background 0.6s ease; }
+
+        /* ── Tab buttons ── */
+        .tab-btn {
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s, opacity 0.2s;
+            border: none; cursor: pointer;
+        }
+
+        /* ── Progress ring ── */
+        #progress-ring {
+            transition: stroke-dashoffset 0.9s linear, stroke 0.5s ease;
+        }
+
+        /* ── Timer container paused state ── */
+        #timer-container {
+            transition: opacity 0.35s ease, filter 0.35s ease;
+        }
+        #timer-container.timer-paused {
+            opacity: 0.5;
+            filter: saturate(0.35) brightness(0.9);
+        }
+
+        /* ── Paused badge ── */
+        #paused-badge {
+            display: none;
+            position: absolute;
+            bottom: 14px; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30,30,30,0.6);
+            color: #fff;
+            font-size: 10px; font-weight: 700;
+            letter-spacing: 0.06em;
+            padding: 3px 11px; border-radius: 99px;
+            white-space: nowrap;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ── Dot ── */
+        .dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            transition: background 0.3s, transform 0.3s;
+        }
+
+        /* ── Session complete toast (bottom) ── */
         .toast-enter { animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { transform: translateX(-50%) translateY(20px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
-        .record-modal-inner { animation: modalUp 0.3s ease; }
-        @keyframes modalUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .dot { width: 12px; height: 12px; border-radius: 50%; transition: background 0.3s, transform 0.3s; }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+        }
+
+        /* ── Shake animation (tab bar) ── */
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20%      { transform: translateX(-7px); }
+            40%      { transform: translateX(7px); }
+            60%      { transform: translateX(-4px); }
+            80%      { transform: translateX(4px); }
+        }
+        .shake-anim { animation: shake 0.45s ease; }
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-[#F0FFF4] to-[#E6FFFA] min-h-screen">
+<body class="min-h-screen" style="background: linear-gradient(135deg, #F0FFF4 0%, #E6FFFA 100%);">
 
-    <div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-10">
+<div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-10">
 
-        <!-- ===== HEADER ===== -->
-        <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <a href="/" class="text-gray-400 hover:text-emerald-500 transition-colors p-1 -ml-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                </a>
-                <div>
-                    <h1 class="text-lg font-bold text-emerald-500">포모도로 타이머</h1>
-                    <p class="text-xs text-emerald-600">집중하고 기록해요 🍀</p>
-                </div>
+    <!-- ===== HEADER ===== -->
+    <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <a href="/" class="text-gray-400 hover:text-emerald-500 transition-colors p-1 -ml-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-lg font-bold text-emerald-500">스터디 타이머</h1>
+                <p class="text-xs text-emerald-600">집중하고 기록해요 🍀</p>
             </div>
-            <div id="auth-zone" class="text-xs text-gray-500 font-medium"></div>
-        </header>
+        </div>
+        <div id="auth-zone" class="text-xs text-gray-500 font-medium"></div>
+    </header>
 
-        <main class="px-4">
+    <main class="px-4">
 
-            <!-- ===== MODE SELECTOR ===== -->
-            <div class="flex gap-1.5 mt-5 bg-gray-50 rounded-2xl p-1.5 border border-gray-100">
-                <button id="mode-btn-focus" class="mode-btn" onclick="setMode('focus')">🍅 집중</button>
-                <button id="mode-btn-short" class="mode-btn" onclick="setMode('short')">☕ 짧은 휴식</button>
-                <button id="mode-btn-long"  class="mode-btn" onclick="setMode('long')">😴 긴 휴식</button>
-            </div>
-
-            <!-- ===== CIRCULAR TIMER ===== -->
-            <div class="flex flex-col items-center mt-8">
-                <div class="relative w-56 h-56">
-                    <svg viewBox="0 0 220 220" class="w-56 h-56 drop-shadow-lg">
-                        <!-- Track -->
-                        <circle id="track-ring" cx="110" cy="110" r="90"
-                                fill="none" stroke="#d1fae5" stroke-width="14"/>
-                        <!-- Progress -->
-                        <circle id="progress-ring" cx="110" cy="110" r="90"
-                                fill="none" stroke="#34d399" stroke-width="14"
-                                stroke-linecap="round"
-                                stroke-dasharray="565.49" stroke-dashoffset="0"
-                                transform="rotate(-90 110 110)"/>
-                    </svg>
-                    <!-- Center overlay -->
-                    <div class="absolute inset-0 flex flex-col items-center justify-center select-none">
-                        <span id="time-display" class="text-5xl font-bold text-gray-800 tabular-nums">25:00</span>
-                        <span id="mode-label" class="text-sm font-semibold mt-1 whitespace-nowrap" style="color:#34d399;">집중</span>
-                    </div>
-                </div>
-
-                <!-- Session dots -->
-                <div class="flex gap-2.5 mt-5" id="session-dots">
-                    <span class="dot" style="background:#e5e7eb;"></span>
-                    <span class="dot" style="background:#e5e7eb;"></span>
-                    <span class="dot" style="background:#e5e7eb;"></span>
-                    <span class="dot" style="background:#e5e7eb;"></span>
-                </div>
-                <p class="text-xs text-gray-400 mt-1.5">4번 집중 후 긴 휴식</p>
-            </div>
-
-            <!-- ===== CONTROLS ===== -->
-            <div class="flex justify-center items-center gap-5 mt-8">
-                <!-- Reset -->
-                <button onclick="resetTimer()"
-                        class="w-14 h-14 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-all active:scale-95" title="초기화">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
+        <!-- ===== TAB SELECTOR (Pill) ===== -->
+        <div id="tab-bar" class="mt-5">
+            <div class="flex bg-gray-100 rounded-2xl p-1 gap-1">
+                <button id="tab-btn-pomodoro" onclick="setTab('pomodoro')"
+                        class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-xl">
+                    ⏱️ 뽀모도로 루틴
                 </button>
-                <!-- Start / Pause -->
-                <button id="start-btn" onclick="toggleTimer()"
-                        class="w-20 h-20 rounded-full text-white flex items-center justify-center transition-all active:scale-95 shadow-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </button>
-                <!-- Skip -->
-                <button onclick="skipSession()"
-                        class="w-14 h-14 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-all active:scale-95" title="건너뛰기">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
-                    </svg>
+                <button id="tab-btn-stopwatch" onclick="setTab('stopwatch')"
+                        class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-xl">
+                    ⏳ 일반 스톱워치
                 </button>
             </div>
+        </div>
 
-            <!-- ===== FOCUS DURATION SELECTOR ===== -->
-            <div id="focus-duration-selector" class="mt-6 px-2">
-                <div class="flex justify-between items-center mb-2">
-                    <p class="text-xs text-gray-400">집중 시간 선택</p>
-                    <p id="slider-label" class="text-sm font-bold" style="color:#34d399;">25분</p>
+        <!-- ===== AUTO-FLOW HINT (pomodoro only) ===== -->
+        <div id="autoflow-hint" class="mt-2 flex items-center justify-center gap-1.5">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <p class="text-xs text-gray-400">집중 완료 시 자동으로 휴식이 시작됩니다</p>
+        </div>
+
+        <!-- ===== CIRCULAR TIMER ===== -->
+        <div class="flex flex-col items-center mt-6">
+            <div id="timer-container" class="relative w-56 h-56">
+                <svg viewBox="0 0 220 220" class="w-56 h-56 drop-shadow-lg">
+                    <!-- Track -->
+                    <circle id="track-ring" cx="110" cy="110" r="90"
+                            fill="none" stroke="#d1fae5" stroke-width="14"/>
+                    <!-- Progress -->
+                    <circle id="progress-ring" cx="110" cy="110" r="90"
+                            fill="none" stroke="#34d399" stroke-width="14"
+                            stroke-linecap="round"
+                            stroke-dasharray="565.49" stroke-dashoffset="0"
+                            transform="rotate(-90 110 110)"/>
+                </svg>
+                <!-- Center overlay -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center select-none">
+                    <span id="time-display" class="text-5xl font-bold text-gray-800 tabular-nums">25:00</span>
+                    <span id="mode-label"   class="text-sm font-semibold mt-1 whitespace-nowrap" style="color:#34d399;">⚡ 1회차 집중</span>
                 </div>
-                <input id="duration-slider" type="range" min="1" max="60" value="25"
-                       oninput="onSliderInput(this.value)"
-                       onchange="onSliderChange(this.value)"
-                       class="w-full h-2 rounded-full appearance-none cursor-pointer"
-                       style="accent-color:#34d399; background: linear-gradient(to right, #34d399 calc(25/60*100%), #e5e7eb calc(25/60*100%));">
+                <!-- Paused badge -->
+                <span id="paused-badge">⏸ 측정 중단됨</span>
             </div>
 
-            <!-- ===== TODAY STATS ===== -->
-            <div class="mt-7 bg-white rounded-3xl p-5 shadow-sm border border-emerald-50">
-                <h3 class="text-sm font-bold text-gray-600 mb-3">📊 오늘의 공부</h3>
-                <div class="flex gap-3">
-                    <div class="flex-1 rounded-2xl p-3.5 text-center" style="background:#f0fdf4;">
-                        <p id="stat-sessions" class="text-2xl font-bold" style="color:#34d399;">0</p>
-                        <p class="text-xs text-gray-500 mt-0.5">완료 세션</p>
-                    </div>
-                    <div class="flex-1 rounded-2xl p-3.5 text-center" style="background:#f0fdf4;">
-                        <p id="stat-total-time" class="text-2xl font-bold" style="color:#34d399;">0분</p>
-                        <p class="text-xs text-gray-500 mt-0.5">총 집중 시간</p>
-                    </div>
+            <!-- Session dots (pomodoro only) -->
+            <div id="session-dots-wrapper" class="flex flex-col items-center mt-4">
+                <div class="flex gap-2.5" id="session-dots">
+                    <span class="dot" style="background:#e5e7eb;"></span>
+                    <span class="dot" style="background:#e5e7eb;"></span>
+                    <span class="dot" style="background:#e5e7eb;"></span>
+                    <span class="dot" style="background:#e5e7eb;"></span>
                 </div>
+                <p class="text-xs text-gray-400 mt-1.5">4번 집중 후 긴 휴식 (자동 전환)</p>
             </div>
+        </div>
 
-        </main>
-
-    </div><!-- /max-w -->
-
-    <!-- ===== SESSION COMPLETE TOAST ===== -->
-    <div id="session-toast" class="hidden fixed z-50"
-         style="bottom:24px; left:50%; transform:translateX(-50%); width:90%; max-width:400px;">
-        <div class="toast-enter bg-white rounded-2xl shadow-xl border border-emerald-100 p-4 flex items-center gap-3">
-            <span id="toast-emoji" class="text-2xl shrink-0">🎉</span>
-            <div class="flex-1 min-w-0">
-                <p id="toast-title" class="font-bold text-gray-800 text-sm">집중 세션 완료!</p>
-                <p id="toast-body" class="text-xs text-gray-500 mt-0.5 truncate">잠깐 쉬어가요</p>
-            </div>
-            <button onclick="closeToast()" class="text-gray-400 hover:text-gray-600 shrink-0 ml-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        <!-- ===== CONTROLS ===== -->
+        <div class="flex justify-center items-center gap-5 mt-7">
+            <!-- Reset -->
+            <button onclick="resetTimer()"
+                    class="w-14 h-14 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-all active:scale-95" title="초기화">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
             </button>
+            <!-- Start / Pause -->
+            <button id="start-btn" onclick="toggleTimer()"
+                    class="w-20 h-20 rounded-full text-white flex items-center justify-center transition-all active:scale-95 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <!-- Spacer (balances layout) -->
+            <div class="w-14 h-14"></div>
+        </div>
+
+        <!-- ===== SKIP CURRENT PHASE (pomodoro only, below controls) ===== -->
+        <div id="skip-row" class="flex justify-center mt-3">
+            <button onclick="skipSession()"
+                    class="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1.5 py-1.5 px-4 rounded-full hover:bg-gray-100 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                </svg>
+                현재 단계 건너뛰기
+            </button>
+        </div>
+
+        <!-- ===== FOCUS DURATION SELECTOR ===== -->
+        <div id="focus-duration-selector" class="mt-5 px-2">
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-xs text-gray-400">집중 시간 선택</p>
+                <p id="slider-label" class="text-sm font-bold" style="color:#34d399;">25분</p>
+            </div>
+            <input id="duration-slider" type="range" min="1" max="60" value="25"
+                   oninput="onSliderInput(this.value)"
+                   onchange="onSliderChange(this.value)"
+                   class="w-full h-2 rounded-full appearance-none cursor-pointer"
+                   style="accent-color:#34d399; background: linear-gradient(to right, #34d399 calc(25/60*100%), #e5e7eb calc(25/60*100%));">
+        </div>
+
+        <!-- ===== TODAY STATS ===== -->
+        <div class="mt-7 bg-white rounded-3xl p-5 shadow-sm border border-emerald-50">
+            <h3 class="text-sm font-bold text-gray-600 mb-3">📊 오늘의 공부</h3>
+            <div id="stat-box" class="rounded-2xl p-3.5 text-center" style="background:#f0fdf4;">
+                <p id="stat-total-time" class="text-2xl font-bold" style="color:#34d399;">0분</p>
+                <p class="text-xs text-gray-500 mt-0.5">총 집중 시간</p>
+            </div>
+        </div>
+
+    </main>
+
+</div><!-- /max-w -->
+
+<!-- ===== WARNING TOAST (top center) ===== -->
+<div id="warn-toast"
+     class="hidden fixed z-50 top-5 left-1/2 -translate-x-1/2 transition-all duration-300 ease-out"
+     style="width:90%; max-width:360px;">
+    <div class="bg-gray-900/90 backdrop-blur-sm text-white rounded-2xl shadow-2xl px-4 py-3.5 flex items-center gap-3">
+        <div class="flex-1 min-w-0">
+            <p id="warn-title" class="font-bold text-sm">경고</p>
+            <p id="warn-body"  class="text-xs text-gray-300 mt-0.5">타이머를 먼저 정지해주세요</p>
         </div>
     </div>
+</div>
 
-    <script defer src="{{ url_for('static', filename='js/timer.js') }}"></script>
+<!-- ===== SESSION COMPLETE TOAST (bottom) ===== -->
+<div id="session-toast" class="hidden fixed z-50"
+     style="bottom:24px; left:50%; transform:translateX(-50%); width:90%; max-width:420px;">
+    <div class="toast-enter bg-white rounded-2xl shadow-xl border border-emerald-100 p-4 flex items-center gap-3">
+        <span id="toast-emoji" class="text-2xl shrink-0">🎉</span>
+        <div class="flex-1 min-w-0">
+            <p id="toast-title" class="font-bold text-gray-800 text-sm">집중 세션 완료!</p>
+            <p id="toast-body"  class="text-xs text-gray-500 mt-0.5 truncate">잠깐 쉬어가요</p>
+        </div>
+        <button onclick="closeToast()" class="text-gray-400 hover:text-gray-600 shrink-0 ml-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<script defer src="{{ url_for('static', filename='js/timer.js') }}"></script>
 </body>
 </html>

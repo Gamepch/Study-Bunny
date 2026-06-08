@@ -1,0 +1,21 @@
+# Clover Study
+
+> 공부 기록을 함께 나누는 학습 커뮤니티 플랫폼. 포모도로 타이머, 집중 기록, 새싹 키우기 등 학습 동기부여 도구를 제공합니다.
+
+## 주요 페이지
+
+- [홈 / 피드](https://cloverstudy.net/): 공부기록·질문·꿀팁·잡담 카테고리별 게시물 피드
+- [타이머](https://cloverstudy.net/timer): 포모도로 타이머 및 집중 시간 기록
+- [마이페이지](https://cloverstudy.net/mypage): 개인 공부 기록, 스트릭, 집중 리더보드
+- [블로그](https://cloverstudy.net/blog): 학습법·자기계발 관련 아티클
+- [소개](https://cloverstudy.net/about): 서비스 소개
+- [개인정보처리방침](https://cloverstudy.net/privacy)
+- [이용약관](https://cloverstudy.net/terms)
+
+## 기능 요약
+
+- 게시물 작성·댓글·좋아요 (이미지 최대 5장)
+- 포모도로 타이머 + 집중 시간 리더보드
+- 출석 스트릭 및 새싹 키우기 (레벨 시스템)
+- 구글 OAuth 로그인 / 일반 로그인
+- PWA 지원 (모바일 홈 화면 추가 가능)

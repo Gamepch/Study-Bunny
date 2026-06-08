@@ -468,7 +468,7 @@ async function loadStreak(username) {
     pomActivityMap  = {};
     postDates.forEach(d => { postActivityMap[d] = (postActivityMap[d] || 0) + 1; });
     Object.entries(pomHistory).forEach(([d, v]) => {
-        pomActivityMap[d] = (pomActivityMap[d] || 0) + (v.sessions || 0);
+        pomActivityMap[d] = (pomActivityMap[d] || 0) + Math.floor((v.totalSec || 0) / 60);
     });
 
     if (loadingEl) loadingEl.textContent = '';
@@ -551,16 +551,16 @@ function renderStreakCalendar(activityMap) {
 
     function getColor(n) {
         if (!n) return '#f0fdf4';
-        if (n === 1) return '#a7f3d0';
-        if (n <= 3)  return '#34d399';
-        if (n <= 6)  return '#059669';
+        if (n < 10)  return '#a7f3d0';
+        if (n < 30)  return '#34d399';
+        if (n < 60)  return '#059669';
         return '#065f46';
     }
 
     grid.innerHTML = cells.map(dateStr => {
         const n = activityMap[dateStr] || 0;
         const isToday = dateStr === todayISO;
-        const unit = currentStreakTab === 'post' ? '개' : '세션';
+        const unit = currentStreakTab === 'post' ? '개' : '분';
         const tip = n > 0 ? `${dateStr}: ${n}${unit}` : dateStr;
         return `<div class="grass-cell${isToday ? ' grass-today' : ''}" style="background:${getColor(n)};" title="${tip}"></div>`;
     }).join('');

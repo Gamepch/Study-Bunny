@@ -698,7 +698,7 @@ function insertFocusBadge() {
     const sessions   = parseInt(localStorage.getItem(pfx + 'sessions') || '0');
     const totalSec   = parseInt(localStorage.getItem(pfx + 'total')    || '0');
 
-    if (savedDate !== today || sessions === 0) {
+    if (savedDate !== today || totalSec === 0) {
         alert('오늘의 포모도로 기록이 없어요!\n타이머를 먼저 사용해보세요. ⏱');
         return;
     }
@@ -714,7 +714,7 @@ function insertFocusBadge() {
     const preview   = document.getElementById('focus-badge-preview');
     const valueSpan = document.getElementById('focus-badge-preview-value');
     if (preview && valueSpan) {
-        valueSpan.textContent = `${timeStr} · ${sessions}세션`;
+        valueSpan.textContent = timeStr;
         preview.classList.remove('hidden');
     }
 
@@ -1102,7 +1102,6 @@ function buildRankRow(item, isMe) {
             ${avatar}
             <span class="text-[13px] font-medium text-gray-700 flex-1 truncate">${escapeHtml(item.nickname)}${isMe ? ' <span class="text-[11px] text-emerald-500 font-bold">나</span>' : ''}</span>
             <span class="text-[12px] font-bold text-emerald-600 flex-shrink-0">${fmtFocusTime(item.total_seconds)}</span>
-            <span class="text-[11px] text-gray-400 flex-shrink-0">${item.sessions}세션</span>
         </div>`;
 }
 
