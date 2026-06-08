@@ -811,11 +811,23 @@ def delete_post(post_id):
         conn.close()
         return jsonify({"message": "fail", "reason": "작성자만 삭제할 수 있습니다."}), 403
 
+    image_rows = conn.execute('SELECT image_url FROM post_images WHERE post_id = ?', (post_id,)).fetchall()
+    image_urls = [row['image_url'] for row in image_rows]
+
     conn.execute('DELETE FROM notifications WHERE post_id = ?', (post_id,))
     conn.execute('DELETE FROM comments WHERE post_id = ?', (post_id,))
     conn.execute('DELETE FROM posts WHERE id = ?', (post_id,))
     conn.commit()
     conn.close()
+
+    for url in image_urls:
+        try:
+            file_path = os.path.join(app.root_path, url.lstrip('/'))
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception:
+            pass
+
     return jsonify({"message": "success"}), 200
 
 @app.route('/api/feeds/<int:post_id>', methods=['PUT'])
