@@ -316,7 +316,7 @@ function buildPostItemHtml(post, index, total) {
                 <p class="text-xs text-gray-500 mb-2 truncate">${(post.content || '').replace(/\[focus:\d+:\d+\]\n?/g, '')}</p>
                 <div class="flex items-center text-[11px] text-gray-400 space-x-2">
                     <div class="flex items-center">
-                        <img src="${post.profile_url || 'https://placehold.co/100x100/ffb6c1/ffffff?text=Me'}" alt="프로필" class="w-4 h-4 rounded-full mr-1 object-cover" loading="lazy" decoding="async">
+                        <img src="${post.profile_url || '/static/default_profile.png'}" alt="프로필" class="w-4 h-4 rounded-full mr-1 object-cover" loading="lazy" decoding="async">
                         <a href="/mypage?user=${post.username}" class="font-medium text-gray-600 hover:text-emerald-500 hover:underline" onclick="event.stopPropagation()">${post.nickname}</a>
                     </div>
                     <span>|</span>

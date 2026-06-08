@@ -166,7 +166,7 @@
                 {% for feed in cert_feeds %}
                 <div class="cert-card" onclick="location.href='/post/{{ feed.id }}'">
                     <div class="cert-card-header">
-                        <img src="{{ feed.profile_url or 'https://placehold.co/100x100/6ee7b7/ffffff?text=🍀' }}"
+                        <img src="{{ feed.profile_url or '/static/default_profile.png' }}"
                             alt="프로필" class="cert-card-avatar" width="24" height="24">
                         <span class="cert-card-nickname">{{ feed.nickname }}</span>
                     </div>
@@ -206,7 +206,7 @@
                 <!-- 구글 애드센스 카드 (승인 후 주석 해제)
                 <div class="cert-card cert-card--ad">
                     <div class="cert-card-header">
-                        <img src="https://placehold.co/100x100/4285F4/ffffff?text=G" alt="구글" class="cert-card-avatar" width="24" height="24">
+                        <img src="/static/google_icon.png" alt="구글" class="cert-card-avatar" width="24" height="24">
                         <span class="cert-card-nickname">구글</span>
                     </div>
                     <div class="cert-card-image-wrap">

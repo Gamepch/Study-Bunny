@@ -22,7 +22,10 @@ app.config['JSON_AS_ASCII'] = False
 app.config['JSON_SORT_KEYS'] = False
 
 # Session configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-for-session-management-change-in-production')
+_secret_key = os.environ.get('SECRET_KEY')
+if not _secret_key:
+    raise RuntimeError("SECRET_KEY 환경변수가 설정되지 않았습니다.")
+app.config['SECRET_KEY'] = _secret_key
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 
@@ -1478,7 +1481,7 @@ def signup():
     password = request.form.get('password')
     nickname = request.form.get('nickname', '새로운 클로버')
     
-    profile_url = "https://placehold.co/100x100/6ee7b7/ffffff?text=Clover"
+    profile_url = "/static/default_profile.png"
     
     # Handle profile image upload
     if 'profile_image' in request.files:
@@ -1895,7 +1898,7 @@ def complete_google_signup():
     hashed_password = generate_password_hash(password)
     
     # 프로필 이미지 처리
-    profile_url = "https://placehold.co/100x100/6ee7b7/ffffff?text=Clover"
+    profile_url = "/static/default_profile.png"
     
     if 'profile_image' in request.files:
         file = request.files['profile_image']

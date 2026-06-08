@@ -119,8 +119,33 @@ function loadEditFormComponent() {
                 container.innerHTML = html;
                 const imgInput = document.getElementById('modal-image-input');
                 if (imgInput) imgInput.onchange = previewEditImages;
+                const cameraInput = document.getElementById('modal-camera-input');
+                if (cameraInput) cameraInput.onchange = previewEditImages;
+                setupPhotoPicker();
             }
         });
+}
+
+function setupPhotoPicker() {
+    const btn = document.getElementById('photo-attach-btn');
+    const menu = document.getElementById('photo-picker-menu');
+    const galleryBtn = document.getElementById('pick-gallery-btn');
+    const cameraBtn = document.getElementById('pick-camera-btn');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+    galleryBtn.addEventListener('click', () => {
+        menu.classList.add('hidden');
+        document.getElementById('modal-image-input').click();
+    });
+    cameraBtn.addEventListener('click', () => {
+        menu.classList.add('hidden');
+        document.getElementById('modal-camera-input').click();
+    });
+    document.addEventListener('click', () => menu.classList.add('hidden'), { once: false });
 }
 
 function previewEditImages(event) {

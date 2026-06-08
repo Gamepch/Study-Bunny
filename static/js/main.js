@@ -284,7 +284,7 @@ function renderCertFeeds(feeds) {
         return `
             <div class="cert-card" onclick="location.href='/post/${feed.id}'">
                 <div class="cert-card-header">
-                    <img src="${feed.profile_url || 'https://placehold.co/100x100/6ee7b7/ffffff?text=🍀'}"
+                    <img src="${feed.profile_url || '/static/default_profile.png'}"
                         alt="프로필" class="cert-card-avatar">
                     <span class="cert-card-nickname">${escapeHtml(feed.nickname || '클로버')}</span>
                 </div>
@@ -582,8 +582,33 @@ function loadFormComponent() {
                 writeImages = [];
                 const imgInput = document.getElementById('modal-image-input');
                 if (imgInput) imgInput.onchange = previewImages;
+                const cameraInput = document.getElementById('modal-camera-input');
+                if (cameraInput) cameraInput.onchange = previewImages;
+                setupPhotoPicker();
             }
         });
+}
+
+function setupPhotoPicker() {
+    const btn = document.getElementById('photo-attach-btn');
+    const menu = document.getElementById('photo-picker-menu');
+    const galleryBtn = document.getElementById('pick-gallery-btn');
+    const cameraBtn = document.getElementById('pick-camera-btn');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.classList.toggle('hidden');
+    });
+    galleryBtn.addEventListener('click', () => {
+        menu.classList.add('hidden');
+        document.getElementById('modal-image-input').click();
+    });
+    cameraBtn.addEventListener('click', () => {
+        menu.classList.add('hidden');
+        document.getElementById('modal-camera-input').click();
+    });
+    document.addEventListener('click', () => menu.classList.add('hidden'), { once: false });
 }
 
 function previewImages(event) {
