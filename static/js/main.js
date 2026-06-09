@@ -352,7 +352,7 @@ function renderCommunityFeeds(feeds) {
     if (!feeds || feeds.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <span class="emoji">💬</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="empty-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#a3d9c4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 ${currentCommunityFilter === '전체' ? '아직 커뮤니티 글이 없어요.<br>첫 번째 글을 남겨보세요!' : '이 카테고리에 글이 없어요.'}
             </div>`;
         renderCommunityPagination(0);
@@ -493,21 +493,21 @@ function openWriteModal(type) {
         if (!categoryEl) return;
 
         if (type === 'certification') {
-            categoryEl.innerHTML = '<option value="공부기록">📚 공부기록</option>';
+            categoryEl.innerHTML = '<option value="공부기록">공부기록</option>';
             categoryEl.value = '공부기록';
             categoryEl.classList.add('hidden');
-            if (titleEl) titleEl.innerHTML = '새 공부 인증 <span class="ml-2 text-2xl">📸</span>';
+            if (titleEl) titleEl.innerHTML = '새 공부 인증 <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 inline-block" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
         } else {
             categoryEl.innerHTML = `
-                <option value="잡담">🧡 잡담</option>
-                <option value="질문">🙋‍♀️ 질문</option>
-                <option value="꿀팁">💡 꿀팁</option>
+                <option value="잡담">잡담</option>
+                <option value="질문">질문</option>
+                <option value="꿀팁">꿀팁</option>
             `;
             // 현재 커뮤니티 필터 값 적용 (전체면 잡담으로)
             const commCat = currentCommunityFilter !== '전체' ? currentCommunityFilter : '잡담';
             categoryEl.value = commCat;
             categoryEl.classList.remove('hidden');
-            if (titleEl) titleEl.innerHTML = '커뮤니티 글쓰기 <span class="ml-2 text-2xl">✏️</span>';
+            if (titleEl) titleEl.innerHTML = '커뮤니티 글쓰기 <svg xmlns="http://www.w3.org/2000/svg" class="ml-2 inline-block" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
         }
 
         // 임시저장 불러오기 (사용자 확인 후)

@@ -2,10 +2,10 @@
     <!-- 카테고리 셀렉트 (커뮤니티 모드에서만 표시, JS로 제어) -->
     <select id="modal-category"
         class="w-full p-3.5 text-[15px] border border-gray-200 text-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-gray-50/50 appearance-none font-medium">
-        <option value="공부기록">📚 공부기록</option>
-        <option value="질문">🙋‍♀️ 질문</option>
-        <option value="꿀팁">💡 꿀팁</option>
-        <option value="잡담">🧡 잡담</option>
+        <option value="공부기록">공부기록</option>
+        <option value="질문">질문</option>
+        <option value="꿀팁">꿀팁</option>
+        <option value="잡담">잡담</option>
     </select>
 
     <input type="text" id="modal-title-input" placeholder="제목을 입력하세요"
@@ -24,12 +24,14 @@
         <div id="photo-picker-menu" class="hidden absolute bottom-full left-0 right-0 mb-2 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden z-10">
             <button type="button" id="pick-gallery-btn"
                 class="flex items-center w-full px-5 py-4 hover:bg-emerald-50 transition-colors text-gray-700 font-medium text-[15px]">
-                <span class="mr-3">🖼️</span> 갤러리에서 선택
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-gray-500 flex-shrink-0"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                갤러리에서 선택
             </button>
             <div class="border-t border-gray-100"></div>
             <button type="button" id="pick-camera-btn"
                 class="flex items-center w-full px-5 py-4 hover:bg-emerald-50 transition-colors text-gray-700 font-medium text-[15px]">
-                <span class="mr-3">📷</span> 카메라로 찍기
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3 text-gray-500 flex-shrink-0"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                카메라로 찍기
             </button>
         </div>
         <input type="file" id="modal-image-input" class="hidden" accept="image/*" multiple>
