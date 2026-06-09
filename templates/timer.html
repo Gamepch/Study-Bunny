@@ -1,246 +1,354 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>포모도로 타이머 | Clover Study 🍀</title>
+    <title>공부 타이머 | Clover Study 🍀</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="manifest" href="{{ url_for('manifest') }}">
-    <meta name="theme-color" content="#10B981">
+    <meta name="theme-color" content="#0B5C47">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Clover 타이머">
-    <link rel="apple-touch-icon" href="/static/favicon.ico">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* ── Base ── */
-        body { transition: background 0.6s ease; }
-
-        /* ── Tab buttons ── */
-        .tab-btn {
-            transition: background 0.2s, color 0.2s, box-shadow 0.2s, opacity 0.2s;
-            border: none; cursor: pointer;
+        :root {
+            --surface: #f7f7f5;
+            --surface-2: #f0f0ed;
+            --line: #e6e6e2;
+            --line-strong: #d8d8d3;
+            --text: #1a1a18;
+            --text-2: #6b6b66;
+            --text-3: #9a9a94;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --brand: #0B5C47;
         }
 
-        /* ── Progress ring ── */
-        #progress-ring {
-            transition: stroke-dashoffset 0.9s linear, stroke 0.5s ease;
+        * { box-sizing: border-box; }
+
+        body {
+            background: #f5f5f3;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
         }
 
-        /* ── Timer container paused state ── */
-        #timer-container {
-            transition: opacity 0.35s ease, filter 0.35s ease;
-        }
-        #timer-container.timer-paused {
-            opacity: 0.5;
-            filter: saturate(0.35) brightness(0.9);
-        }
-
-        /* ── Paused badge ── */
-        #paused-badge {
-            display: none;
-            position: absolute;
-            bottom: 14px; left: 50%;
-            transform: translateX(-50%);
-            background: rgba(30,30,30,0.6);
-            color: #fff;
-            font-size: 10px; font-weight: 700;
-            letter-spacing: 0.06em;
-            padding: 3px 11px; border-radius: 99px;
-            white-space: nowrap;
-            pointer-events: none;
-            backdrop-filter: blur(4px);
+        .app-shell {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* ── Dot ── */
-        .dot {
-            width: 12px; height: 12px; border-radius: 50%;
-            transition: background 0.3s, transform 0.3s;
+        /* ── 상단 내부 탭 pill ── */
+        .inner-tab-bar {
+            display: flex; gap: 6px;
+            background: var(--surface); padding: 4px;
+            border-radius: 100px;
+            margin: 16px 18px 0;
+            flex-shrink: 0;
+        }
+        .inner-tab-btn {
+            flex: 1; padding: 9px; border-radius: 100px; border: none;
+            background: none; font-family: inherit; font-size: 14px;
+            color: var(--text-2); cursor: pointer; transition: all .15s;
+        }
+        .inner-tab-btn.active {
+            background: #fff; color: var(--brand); font-weight: 700;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
         }
 
-        /* ── Session complete toast (bottom) ── */
-        .toast-enter { animation: slideUp 0.3s ease; }
-        @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-            to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+        /* ── Scenes ── */
+        .scene { display: none; flex-direction: column; flex: 1; overflow-y: auto; padding: 20px 18px 88px; }
+        .scene.active { display: flex; }
+
+        /* ── Subject cards ── */
+        .subject-card {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px; border-radius: var(--radius);
+            background: var(--surface); border: 1.5px solid transparent;
+            cursor: pointer; margin-bottom: 10px;
+            transition: border-color .15s, background .15s;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 64px;
+        }
+        .subject-card:active { background: var(--surface-2); border-color: var(--line-strong); }
+        .subj-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .subj-name { font-size: 17px; font-weight: 600; flex: 1; color: var(--text); }
+        .subj-time { font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+        .empty-state { text-align: center; color: var(--text-3); font-size: 14px; padding: 48px 20px; line-height: 1.8; }
+
+        .add-btn {
+            width: 100%; margin-top: 4px; padding: 15px;
+            border-radius: var(--radius); border: 1.5px dashed var(--line-strong);
+            background: none; color: var(--text-2); font-size: 15px;
+            font-family: inherit; cursor: pointer; transition: color .15s, border-color .15s;
+        }
+        .add-btn:hover { color: var(--text); border-color: var(--text-3); }
+
+        /* ── Topbar ── */
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .today-total { font-size: 14px; color: var(--text-2); }
+        .today-total b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+        .dday-badge {
+            font-size: 12px; font-weight: 700; padding: 4px 11px;
+            border-radius: 100px; background: var(--surface); color: var(--text-2);
         }
 
-        /* ── Shake animation (tab bar) ── */
-        @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            20%      { transform: translateX(-7px); }
-            40%      { transform: translateX(7px); }
-            60%      { transform: translateX(-4px); }
-            80%      { transform: translateX(4px); }
+        /* ── Running screen ── */
+        .running-scene {
+            flex: 1; display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 0 18px 88px; text-align: center;
         }
-        .shake-anim { animation: shake 0.45s ease; }
+        .running-scene.active { display: flex; }
+        .cur-subject-label { font-size: 16px; color: var(--text-2); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .big-time {
+            font-size: clamp(60px, 18vw, 84px);
+            font-weight: 600; font-variant-numeric: tabular-nums;
+            letter-spacing: 0.01em; line-height: 1; margin-bottom: 10px; color: var(--text);
+        }
+        .sub-note { font-size: 13px; color: var(--text-3); margin-bottom: 48px; }
+        .controls { display: flex; gap: 12px; width: 100%; }
+        .ctrl-btn {
+            flex: 1; padding: 16px; border-radius: var(--radius); border: none;
+            font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: opacity .15s; -webkit-tap-highlight-color: transparent;
+        }
+        .ctrl-btn:active { opacity: .75; }
+        .ctrl-pause { background: var(--surface); color: var(--text); }
+        .ctrl-stop  { background: #1a1a18; color: #fff; }
+        .paused-indicator { font-size: 13px; color: var(--text-3); margin-top: 8px; }
+
+        /* ── Stats ── */
+        .stat-toggle {
+            display: flex; gap: 6px; background: var(--surface); padding: 4px;
+            border-radius: 100px; margin-bottom: 22px;
+        }
+        .stat-toggle button {
+            flex: 1; padding: 8px; border-radius: 100px; border: none;
+            background: none; font-family: inherit; font-size: 14px; color: var(--text-2); cursor: pointer;
+        }
+        .stat-toggle button.on {
+            background: #fff; color: var(--text); font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+        .total-time-big { font-size: 44px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+        .total-label { font-size: 13px; color: var(--text-3); margin-top: 4px; margin-bottom: 24px; }
+        .goal-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; background: var(--surface); border-radius: var(--radius); margin-bottom: 24px;
+        }
+        .goal-pct { font-size: 22px; font-weight: 600; line-height: 1; }
+        .goal-text { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+        .section-h { font-size: 13px; color: var(--text-3); margin-bottom: 12px; font-weight: 500; }
+        .bar-row { margin-bottom: 14px; }
+        .bar-top { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 7px; }
+        .bar-top .nm { font-weight: 500; }
+        .bar-top .tm { color: var(--text-3); font-variant-numeric: tabular-nums; }
+        .bar-track { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+        .stat-empty { text-align: center; color: var(--text-3); font-size: 14px; padding: 32px 0; }
+
+        /* ── Settings ── */
+        .setting-section { margin-bottom: 28px; }
+        .subj-edit-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 13px 14px; background: var(--surface); border-radius: var(--radius-sm);
+            margin-bottom: 8px;
+        }
+        .subj-edit-item .nm { flex: 1; font-size: 15px; }
+        .subj-del-btn {
+            font-size: 13px; color: var(--text-3); background: none; border: none;
+            cursor: pointer; font-family: inherit; padding: 4px 8px;
+        }
+        .setting-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 16px; background: var(--surface); border-radius: var(--radius-sm);
+            margin-bottom: 8px; font-size: 15px; cursor: pointer;
+        }
+        .setting-row .val { font-size: 14px; color: var(--text-3); }
+
+        /* ── Modal ── */
+        .modal-backdrop {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+            z-index: 200; align-items: flex-end; justify-content: center;
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal-sheet {
+            width: 100%; max-width: 480px; background: #fff; border-radius: 20px 20px 0 0;
+            padding: 20px 20px 32px; animation: slideUp .22s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+        .modal-input {
+            width: 100%; padding: 13px 14px; border-radius: var(--radius-sm);
+            border: 1.5px solid var(--line); font-size: 15px; font-family: inherit;
+            margin-bottom: 10px; outline: none;
+        }
+        .modal-input:focus { border-color: var(--brand); }
+        .modal-btn {
+            width: 100%; padding: 14px; border-radius: var(--radius); border: none;
+            font-size: 16px; font-weight: 600; font-family: inherit; cursor: pointer;
+            background: var(--brand); color: #fff; margin-top: 4px;
+        }
+        .modal-btn-cancel {
+            width: 100%; padding: 12px; border-radius: var(--radius); border: none;
+            font-size: 15px; font-family: inherit; cursor: pointer;
+            background: var(--surface); color: var(--text-2); margin-top: 8px;
+        }
+        .color-picker-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+        .color-swatch {
+            width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+            border: 2px solid transparent; transition: transform .1s;
+        }
+        .color-swatch.selected { border-color: #1a1a18; transform: scale(1.18); }
+
+        #goal-ring { width: 52px; height: 52px; flex-shrink: 0; }
     </style>
 </head>
+<body>
 
-<body class="min-h-screen" style="background: linear-gradient(135deg, #F0FFF4 0%, #E6FFFA 100%);">
+<div class="app-shell">
 
-<div class="max-w-[480px] mx-auto bg-white/60 min-h-screen shadow-xl relative pb-10">
+    <!-- ══════════════════════════════════════
+         상단 내부 탭 (running 씬에서 숨김)
+    ══════════════════════════════════════ -->
+    <nav id="inner-tab-bar" class="inner-tab-bar">
+        <button id="inner-tab-timer"    class="inner-tab-btn active" onclick="goScene('timer')">타이머</button>
+        <button id="inner-tab-stats"    class="inner-tab-btn"        onclick="goScene('stats')">통계</button>
+        <button id="inner-tab-settings" class="inner-tab-btn"        onclick="goScene('settings')">설정</button>
+    </nav>
 
-    <!-- ===== HEADER ===== -->
-    <header class="p-4 bg-white sticky top-0 z-10 border-b border-emerald-50 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <a href="/" class="text-gray-400 hover:text-emerald-500 transition-colors p-1 -ml-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-            </a>
-            <div>
-                <h1 class="text-lg font-bold text-emerald-500">스터디 타이머</h1>
-                <p class="text-xs text-emerald-600">집중하고 기록해요 🍀</p>
+    <!-- ══════════════════════════════════════
+         SCENE: 타이머 (과목 목록)
+    ══════════════════════════════════════ -->
+    <div id="scene-timer" class="scene active">
+        <div class="topbar">
+            <div class="today-total">오늘 <b id="today-total-display">0분</b></div>
+            <div id="dday-badge" class="dday-badge" style="display:none;"></div>
+        </div>
+        <p class="section-h">과목을 눌러 시작하세요</p>
+        <div id="subject-list">
+            <div class="empty-state" id="empty-hint">
+                아직 과목이 없어요<br>
+                <span style="font-size:13px;">아래 버튼을 눌러 첫 과목을 추가해보세요</span>
             </div>
         </div>
-        <div id="auth-zone" class="text-xs text-gray-500 font-medium"></div>
-    </header>
-
-    <main class="px-4">
-
-        <!-- ===== TAB SELECTOR (Pill) ===== -->
-        <div id="tab-bar" class="mt-5">
-            <div class="flex bg-gray-100 rounded-2xl p-1 gap-1">
-                <button id="tab-btn-pomodoro" onclick="setTab('pomodoro')"
-                        class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-xl">
-                    ⏱️ 뽀모도로 루틴
-                </button>
-                <button id="tab-btn-stopwatch" onclick="setTab('stopwatch')"
-                        class="tab-btn flex-1 py-2.5 text-sm font-bold rounded-xl">
-                    ⏳ 일반 스톱워치
-                </button>
-            </div>
-        </div>
-
-        <!-- ===== AUTO-FLOW HINT (pomodoro only) ===== -->
-        <div id="autoflow-hint" class="mt-2 flex items-center justify-center gap-1.5">
-            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <p class="text-xs text-gray-400">집중 완료 시 자동으로 휴식이 시작됩니다</p>
-        </div>
-
-        <!-- ===== CIRCULAR TIMER ===== -->
-        <div class="flex flex-col items-center mt-6">
-            <div id="timer-container" class="relative w-56 h-56">
-                <svg viewBox="0 0 220 220" class="w-56 h-56 drop-shadow-lg">
-                    <!-- Track -->
-                    <circle id="track-ring" cx="110" cy="110" r="90"
-                            fill="none" stroke="#d1fae5" stroke-width="14"/>
-                    <!-- Progress -->
-                    <circle id="progress-ring" cx="110" cy="110" r="90"
-                            fill="none" stroke="#34d399" stroke-width="14"
-                            stroke-linecap="round"
-                            stroke-dasharray="565.49" stroke-dashoffset="0"
-                            transform="rotate(-90 110 110)"/>
-                </svg>
-                <!-- Center overlay -->
-                <div class="absolute inset-0 flex flex-col items-center justify-center select-none">
-                    <span id="time-display" class="text-5xl font-bold text-gray-800 tabular-nums">25:00</span>
-                    <span id="mode-label"   class="text-sm font-semibold mt-1 whitespace-nowrap" style="color:#34d399;">⚡ 1회차 집중</span>
-                </div>
-                <!-- Paused badge -->
-                <span id="paused-badge">⏸ 측정 중단됨</span>
-            </div>
-
-            <!-- Session dots (pomodoro only) -->
-            <div id="session-dots-wrapper" class="flex flex-col items-center mt-4">
-                <div class="flex gap-2.5" id="session-dots">
-                    <span class="dot" style="background:#e5e7eb;"></span>
-                    <span class="dot" style="background:#e5e7eb;"></span>
-                    <span class="dot" style="background:#e5e7eb;"></span>
-                    <span class="dot" style="background:#e5e7eb;"></span>
-                </div>
-                <p class="text-xs text-gray-400 mt-1.5">4번 집중 후 긴 휴식 (자동 전환)</p>
-            </div>
-        </div>
-
-        <!-- ===== CONTROLS ===== -->
-        <div class="flex justify-center items-center gap-5 mt-7">
-            <!-- Reset -->
-            <button onclick="resetTimer()"
-                    class="w-14 h-14 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 transition-all active:scale-95" title="초기화">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-            </button>
-            <!-- Start / Pause -->
-            <button id="start-btn" onclick="toggleTimer()"
-                    class="w-20 h-20 rounded-full text-white flex items-center justify-center transition-all active:scale-95 shadow-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </button>
-            <!-- Spacer (balances layout) -->
-            <div class="w-14 h-14"></div>
-        </div>
-
-        <!-- ===== SKIP CURRENT PHASE (pomodoro only, below controls) ===== -->
-        <div id="skip-row" class="flex justify-center mt-3">
-            <button onclick="skipSession()"
-                    class="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1.5 py-1.5 px-4 rounded-full hover:bg-gray-100 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
-                </svg>
-                현재 단계 건너뛰기
-            </button>
-        </div>
-
-        <!-- ===== FOCUS DURATION SELECTOR ===== -->
-        <div id="focus-duration-selector" class="mt-5 px-2">
-            <div class="flex justify-between items-center mb-2">
-                <p class="text-xs text-gray-400">집중 시간 선택</p>
-                <p id="slider-label" class="text-sm font-bold" style="color:#34d399;">25분</p>
-            </div>
-            <input id="duration-slider" type="range" min="1" max="60" value="25"
-                   oninput="onSliderInput(this.value)"
-                   onchange="onSliderChange(this.value)"
-                   class="w-full h-2 rounded-full appearance-none cursor-pointer"
-                   style="accent-color:#34d399; background: linear-gradient(to right, #34d399 calc(25/60*100%), #e5e7eb calc(25/60*100%));">
-        </div>
-
-        <!-- ===== TODAY STATS ===== -->
-        <div class="mt-7 bg-white rounded-3xl p-5 shadow-sm border border-emerald-50">
-            <h3 class="text-sm font-bold text-gray-600 mb-3">📊 오늘의 공부</h3>
-            <div id="stat-box" class="rounded-2xl p-3.5 text-center" style="background:#f0fdf4;">
-                <p id="stat-total-time" class="text-2xl font-bold" style="color:#34d399;">0분</p>
-                <p class="text-xs text-gray-500 mt-0.5">총 집중 시간</p>
-            </div>
-        </div>
-
-    </main>
-
-</div><!-- /max-w -->
-
-<!-- ===== WARNING TOAST (top center) ===== -->
-<div id="warn-toast"
-     class="hidden fixed z-50 top-5 left-1/2 -translate-x-1/2 transition-all duration-300 ease-out"
-     style="width:90%; max-width:360px;">
-    <div class="bg-gray-900/90 backdrop-blur-sm text-white rounded-2xl shadow-2xl px-4 py-3.5 flex items-center gap-3">
-        <div class="flex-1 min-w-0">
-            <p id="warn-title" class="font-bold text-sm">경고</p>
-            <p id="warn-body"  class="text-xs text-gray-300 mt-0.5">타이머를 먼저 정지해주세요</p>
-        </div>
+        <button class="add-btn" onclick="openAddSubjectModal()">+ 과목 추가</button>
     </div>
-</div>
 
-<!-- ===== SESSION COMPLETE TOAST (bottom) ===== -->
-<div id="session-toast" class="hidden fixed z-50"
-     style="bottom:24px; left:50%; transform:translateX(-50%); width:90%; max-width:420px;">
-    <div class="toast-enter bg-white rounded-2xl shadow-xl border border-emerald-100 p-4 flex items-center gap-3">
-        <span id="toast-emoji" class="text-2xl shrink-0">🎉</span>
-        <div class="flex-1 min-w-0">
-            <p id="toast-title" class="font-bold text-gray-800 text-sm">집중 세션 완료!</p>
-            <p id="toast-body"  class="text-xs text-gray-500 mt-0.5 truncate">잠깐 쉬어가요</p>
+    <!-- ══════════════════════════════════════
+         SCENE: 측정 중
+    ══════════════════════════════════════ -->
+    <div id="scene-running" class="running-scene">
+        <div class="cur-subject-label">
+            <span id="run-dot" class="subj-dot"></span>
+            <span id="run-name">과목 공부 중</span>
         </div>
-        <button onclick="closeToast()" class="text-gray-400 hover:text-gray-600 shrink-0 ml-1">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        <div id="big-time" class="big-time">00:00:00</div>
+        <div id="run-today" class="sub-note">오늘 이 과목 처음</div>
+        <div class="controls">
+            <button class="ctrl-btn ctrl-pause" id="pause-btn" onclick="togglePause()">⏸ 일시정지</button>
+            <button class="ctrl-btn ctrl-stop"  onclick="stopSession()">⏹ 종료</button>
+        </div>
+        <div id="paused-label" class="paused-indicator" style="display:none;">⏸ 일시정지됨</div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SCENE: 통계
+    ══════════════════════════════════════ -->
+    <div id="scene-stats" class="scene">
+        <div class="stat-toggle">
+            <button id="stat-today-btn" class="on" onclick="setStatRange('today')">오늘</button>
+            <button id="stat-week-btn"  onclick="setStatRange('week')">이번 주</button>
+        </div>
+        <div id="stat-total-big" class="total-time-big">0분</div>
+        <div id="stat-total-label" class="total-label">오늘 총 공부 시간</div>
+        <div class="goal-row" id="goal-row">
+            <svg id="goal-ring" viewBox="0 0 56 56">
+                <circle cx="28" cy="28" r="22" fill="none" stroke="#f0f0ed" stroke-width="6"/>
+                <circle id="goal-arc" cx="28" cy="28" r="22" fill="none" stroke="#0B5C47" stroke-width="6"
+                        stroke-linecap="round" stroke-dasharray="0 138" transform="rotate(-90 28 28)"/>
             </svg>
-        </button>
+            <div>
+                <div id="goal-pct" class="goal-pct">0%</div>
+                <div id="goal-text" class="goal-text">목표 설정 없음</div>
+            </div>
+        </div>
+        <p class="section-h">과목별 시간</p>
+        <div id="stat-bars"></div>
+        <div id="stat-empty" class="stat-empty" style="display:none;">오늘 첫 기록을 시작해볼까요?</div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         SCENE: 설정
+    ══════════════════════════════════════ -->
+    <div id="scene-settings" class="scene">
+        <div class="setting-section">
+            <p class="section-h">과목 관리</p>
+            <div id="settings-subject-list"></div>
+            <button class="add-btn" onclick="openAddSubjectModal()">+ 과목 추가</button>
+        </div>
+        <div class="setting-section">
+            <p class="section-h">목표 · 일정</p>
+            <div class="setting-row" onclick="openGoalModal()">
+                <span>하루 목표 시간</span>
+                <span class="val" id="goal-setting-val">8시간 ›</span>
+            </div>
+            <div class="setting-row" onclick="openDdayModal()">
+                <span>D-day</span>
+                <span class="val" id="dday-setting-val">설정 안됨 ›</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: 과목 추가
+══════════════════════════════════════ -->
+<div id="modal-add-subject" class="modal-backdrop">
+    <div class="modal-sheet">
+        <div class="modal-title">과목 추가</div>
+        <input id="add-subject-name" class="modal-input" type="text" placeholder="과목명 (예: 수학)" maxlength="20">
+        <div class="color-picker-row" id="color-picker"></div>
+        <button class="modal-btn" onclick="submitAddSubject()">추가</button>
+        <button class="modal-btn-cancel" onclick="closeModal('modal-add-subject')">취소</button>
     </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     MODAL: 목표 설정
+══════════════════════════════════════ -->
+<div id="modal-goal" class="modal-backdrop">
+    <div class="modal-sheet">
+        <div class="modal-title">하루 목표 시간</div>
+        <input id="goal-hours-input" class="modal-input" type="number" min="1" max="24" value="8" placeholder="시간 (예: 8)">
+        <button class="modal-btn" onclick="submitGoal()">저장</button>
+        <button class="modal-btn-cancel" onclick="closeModal('modal-goal')">취소</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: D-day 설정
+══════════════════════════════════════ -->
+<div id="modal-dday" class="modal-backdrop">
+    <div class="modal-sheet">
+        <div class="modal-title">D-day 설정</div>
+        <input id="dday-name-input"  class="modal-input" type="text" placeholder="시험명 (예: 수능)" maxlength="30">
+        <input id="dday-date-input"  class="modal-input" type="date">
+        <button class="modal-btn" onclick="submitDday()">저장</button>
+        <button class="modal-btn-cancel" onclick="closeModal('modal-dday')">취소</button>
+    </div>
+</div>
+
+{% include '_bottom_nav.html' %}
 <script defer src="{{ url_for('static', filename='js/timer.js') }}"></script>
 </body>
 </html>

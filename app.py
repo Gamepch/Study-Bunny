@@ -345,6 +345,53 @@ def init_db():
     except Exception:
         pass
 
+    # ── subjects ──────────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS subjects (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    TEXT NOT NULL,
+            name       TEXT NOT NULL,
+            color      TEXT NOT NULL DEFAULT '#6b7280',
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            hidden     INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(username) ON DELETE CASCADE
+        )
+    ''')
+
+    # ── study_sessions ────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS study_sessions (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id      TEXT NOT NULL,
+            subject_id   INTEGER,
+            started_at   TEXT NOT NULL,
+            ended_at     TEXT NOT NULL,
+            duration_sec INTEGER NOT NULL,
+            FOREIGN KEY (user_id)    REFERENCES users(username)  ON DELETE CASCADE,
+            FOREIGN KEY (subject_id) REFERENCES subjects(id)     ON DELETE SET NULL
+        )
+    ''')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_sessions_user_date ON study_sessions(user_id, started_at)')
+
+    # ── daily_goals ───────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS daily_goals (
+            user_id    TEXT PRIMARY KEY,
+            target_sec INTEGER NOT NULL DEFAULT 28800,
+            FOREIGN KEY (user_id) REFERENCES users(username) ON DELETE CASCADE
+        )
+    ''')
+
+    # ── ddays ─────────────────────────────────────────────────
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS ddays (
+            user_id     TEXT PRIMARY KEY,
+            name        TEXT NOT NULL DEFAULT '',
+            target_date TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(username) ON DELETE CASCADE
+        )
+    ''')
+
     # ── clover_cards ──────────────────────────────────────────
     conn.execute('''
         CREATE TABLE IF NOT EXISTS clover_cards (
@@ -635,7 +682,7 @@ def index():
     Render the main index page with server-side feed data.
     """
     feeds = fetch_all_feeds()
-    return render_template('index.html', feeds=feeds)
+    return render_template('index.html', feeds=feeds, active_tab='home')
 
 @app.route('/post/<int:post_id>')
 def post_detail(post_id):
@@ -1179,7 +1226,7 @@ def mypage():
         page_data = fetch_mypage_data(username, include_liked=False)
         if page_data is None:
             return "사용자를 찾을 수 없습니다.", 404
-    return render_template('mypage.html', page_data=page_data, target_username=username)
+    return render_template('mypage.html', page_data=page_data, target_username=username, active_tab='mypage')
 
 
 @app.route('/admin')
@@ -2001,7 +2048,7 @@ def check_auth():
 
 @app.route('/timer')
 def timer_page():
-    return render_template('timer.html')
+    return render_template('timer.html', active_tab='timer')
 
 @app.route('/api/streak/<username>')
 def get_streak_data(username):
@@ -2024,71 +2071,261 @@ def get_streak_data(username):
 
     return jsonify({'study_dates': sorted(study_dates)})
 
-@app.route('/api/focus/sync', methods=['POST'])
-def sync_focus():
-    """포모도로 집중 시간을 서버에 동기화 (로그인 사용자만)"""
-    if 'username' not in session:
-        return jsonify({'error': 'unauthorized'}), 401
-
+@app.route('/api/study/sessions', methods=['POST'])
+@require_auth
+def save_study_session():
+    """과목별 공부 세션 저장 (종료 시 호출)"""
+    username = get_current_user()
     data = request.get_json(silent=True) or {}
-    total_seconds = data.get('total_seconds', 0)
+
+    subject_id   = data.get('subject_id')
+    started_at   = data.get('started_at', '')
+    ended_at     = data.get('ended_at', '')
+    duration_sec = data.get('duration_sec', 0)
 
     try:
-        total_seconds = int(total_seconds)
+        duration_sec = int(duration_sec)
     except (ValueError, TypeError):
         return jsonify({'error': 'invalid data'}), 400
 
-    if total_seconds < 0:
-        return jsonify({'error': 'invalid data'}), 400
+    if duration_sec < 10:
+        return jsonify({'ok': True, 'skipped': True})
 
-    username = session['username']
-    kst = timezone(timedelta(hours=9))
-    today = datetime.now(kst).strftime('%Y-%m-%d')
+    if duration_sec > 9 * 3600:
+        duration_sec = 9 * 3600
+
+    if not started_at:
+        started_at = get_korean_time().isoformat()
+    if not ended_at:
+        ended_at = get_korean_time().isoformat()
 
     conn = get_db_connection()
-    prev = conn.execute(
-        'SELECT total_seconds FROM focus_records WHERE username = ? AND date = ?',
-        (username, today)
-    ).fetchone()
-    prev_seconds = prev['total_seconds'] if prev else 0
+
+    if subject_id:
+        subj = conn.execute(
+            'SELECT id FROM subjects WHERE id = ? AND user_id = ? AND hidden = 0',
+            (subject_id, username)
+        ).fetchone()
+        if not subj:
+            subject_id = None
 
     conn.execute('''
-        INSERT INTO focus_records (username, date, total_seconds, sessions)
-        VALUES (?, ?, ?, 0)
-        ON CONFLICT(username, date) DO UPDATE SET
-            total_seconds = MAX(total_seconds, excluded.total_seconds)
-    ''', (username, today, total_seconds))
+        INSERT INTO study_sessions (user_id, subject_id, started_at, ended_at, duration_sec)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (username, subject_id, started_at, ended_at, duration_sec))
 
-    # 5분당 물 1개 (분당 0.2개)
-    prev_water = prev_seconds // 300
-    new_water  = total_seconds // 300
-    earned = max(0, new_water - prev_water)
+    # 5분당 물 1개
+    earned = duration_sec // 300
     if earned > 0:
         add_pending(username, earned, conn)
 
     conn.commit()
     conn.close()
+    return jsonify({'ok': True})
 
+
+@app.route('/api/study/stats')
+@require_auth
+def get_study_stats():
+    """오늘 / 이번 주 통계 반환"""
+    username = get_current_user()
+    kst = timezone(timedelta(hours=9))
+    now = datetime.now(kst)
+    today_str = now.strftime('%Y-%m-%d')
+
+    week_start = (now - timedelta(days=now.weekday())).strftime('%Y-%m-%d')
+
+    conn = get_db_connection()
+
+    def fetch_stats(since):
+        rows = conn.execute('''
+            SELECT ss.subject_id, s.name, s.color,
+                   SUM(ss.duration_sec) AS total_sec
+            FROM study_sessions ss
+            LEFT JOIN subjects s ON ss.subject_id = s.id
+            WHERE ss.user_id = ? AND DATE(ss.started_at) >= ?
+            GROUP BY ss.subject_id
+            ORDER BY total_sec DESC
+        ''', (username, since)).fetchall()
+        total = conn.execute('''
+            SELECT COALESCE(SUM(duration_sec), 0) AS t
+            FROM study_sessions
+            WHERE user_id = ? AND DATE(started_at) >= ?
+        ''', (username, since)).fetchone()['t']
+        return {
+            'total_sec': total,
+            'subjects': [dict(r) for r in rows],
+        }
+
+    goal_row = conn.execute(
+        'SELECT target_sec FROM daily_goals WHERE user_id = ?', (username,)
+    ).fetchone()
+    dday_row = conn.execute(
+        'SELECT name, target_date FROM ddays WHERE user_id = ?', (username,)
+    ).fetchone()
+
+    today_stats = fetch_stats(today_str)
+    week_stats  = fetch_stats(week_start)
+    conn.close()
+
+    dday_val = None
+    if dday_row:
+        try:
+            td = datetime.strptime(dday_row['target_date'], '%Y-%m-%d').date() - now.date()
+            dday_val = td.days
+        except Exception:
+            pass
+
+    return jsonify({
+        'today': today_stats,
+        'week':  week_stats,
+        'goal_sec': goal_row['target_sec'] if goal_row else 28800,
+        'dday': {'name': dday_row['name'], 'days': dday_val} if dday_row else None,
+    })
+
+
+@app.route('/api/subjects', methods=['GET'])
+@require_auth
+def get_subjects():
+    username = get_current_user()
+    conn = get_db_connection()
+    rows = conn.execute(
+        'SELECT * FROM subjects WHERE user_id = ? AND hidden = 0 ORDER BY sort_order, id',
+        (username,)
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/subjects', methods=['POST'])
+@require_auth
+def create_subject():
+    username = get_current_user()
+    data = request.get_json(silent=True) or {}
+    name  = (data.get('name') or '').strip()
+    color = (data.get('color') or '#6b7280').strip()
+    if not name:
+        return jsonify({'error': '과목명을 입력해주세요.'}), 400
+    conn = get_db_connection()
+    max_order = conn.execute(
+        'SELECT COALESCE(MAX(sort_order), -1) AS m FROM subjects WHERE user_id = ?', (username,)
+    ).fetchone()['m']
+    cur = conn.execute(
+        'INSERT INTO subjects (user_id, name, color, sort_order) VALUES (?, ?, ?, ?)',
+        (username, name, color, max_order + 1)
+    )
+    subj_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return jsonify({'id': subj_id, 'name': name, 'color': color}), 201
+
+
+@app.route('/api/subjects/<int:subj_id>', methods=['PUT'])
+@require_auth
+def update_subject(subj_id):
+    username = get_current_user()
+    data = request.get_json(silent=True) or {}
+    conn = get_db_connection()
+    row = conn.execute('SELECT id FROM subjects WHERE id = ? AND user_id = ?', (subj_id, username)).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'error': 'not found'}), 404
+    name       = data.get('name')
+    color      = data.get('color')
+    sort_order = data.get('sort_order')
+    if name is not None:
+        conn.execute('UPDATE subjects SET name = ? WHERE id = ?', (name.strip(), subj_id))
+    if color is not None:
+        conn.execute('UPDATE subjects SET color = ? WHERE id = ?', (color.strip(), subj_id))
+    if sort_order is not None:
+        conn.execute('UPDATE subjects SET sort_order = ? WHERE id = ?', (int(sort_order), subj_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/subjects/<int:subj_id>', methods=['DELETE'])
+@require_auth
+def delete_subject(subj_id):
+    username = get_current_user()
+    conn = get_db_connection()
+    row = conn.execute('SELECT id FROM subjects WHERE id = ? AND user_id = ?', (subj_id, username)).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'error': 'not found'}), 404
+    conn.execute('UPDATE subjects SET hidden = 1 WHERE id = ?', (subj_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/daily-goal', methods=['GET', 'PUT'])
+@require_auth
+def daily_goal():
+    username = get_current_user()
+    conn = get_db_connection()
+    if request.method == 'GET':
+        row = conn.execute('SELECT target_sec FROM daily_goals WHERE user_id = ?', (username,)).fetchone()
+        conn.close()
+        return jsonify({'target_sec': row['target_sec'] if row else 28800})
+    data = request.get_json(silent=True) or {}
+    try:
+        target_sec = max(0, int(data.get('target_sec', 28800)))
+    except (ValueError, TypeError):
+        conn.close()
+        return jsonify({'error': 'invalid'}), 400
+    conn.execute('''
+        INSERT INTO daily_goals (user_id, target_sec) VALUES (?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET target_sec = excluded.target_sec
+    ''', (username, target_sec))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/dday', methods=['GET', 'PUT'])
+@require_auth
+def dday():
+    username = get_current_user()
+    conn = get_db_connection()
+    if request.method == 'GET':
+        row = conn.execute('SELECT name, target_date FROM ddays WHERE user_id = ?', (username,)).fetchone()
+        conn.close()
+        return jsonify(dict(row) if row else {})
+    data = request.get_json(silent=True) or {}
+    name        = (data.get('name') or '').strip()
+    target_date = (data.get('target_date') or '').strip()
+    if not target_date:
+        conn.execute('DELETE FROM ddays WHERE user_id = ?', (username,))
+        conn.commit()
+        conn.close()
+        return jsonify({'ok': True})
+    conn.execute('''
+        INSERT INTO ddays (user_id, name, target_date) VALUES (?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET name = excluded.name, target_date = excluded.target_date
+    ''', (username, name, target_date))
+    conn.commit()
+    conn.close()
     return jsonify({'ok': True})
 
 
 @app.route('/api/focus/leaderboard')
 def focus_leaderboard():
-    """오늘의 집중 시간 Top3 + 현재 유저 순위 반환"""
+    """오늘의 집중 시간 Top3 + 현재 유저 순위 (study_sessions 기준)"""
     kst = timezone(timedelta(hours=9))
     today = datetime.now(kst).strftime('%Y-%m-%d')
-
     current_username = session.get('username')
-
     conn = get_db_connection()
 
-    # Top 3
     top5_rows = conn.execute('''
-        SELECT fr.username, u.nickname, u.profile_url, fr.total_seconds, fr.sessions
-        FROM focus_records fr
-        JOIN users u ON u.username = fr.username
-        WHERE fr.date = ?
-        ORDER BY fr.total_seconds DESC
+        SELECT ss.user_id AS username, u.nickname, u.profile_url,
+               SUM(ss.duration_sec) AS total_seconds,
+               COUNT(ss.id) AS sessions
+        FROM study_sessions ss
+        JOIN users u ON u.username = ss.user_id
+        WHERE DATE(ss.started_at) = ?
+        GROUP BY ss.user_id
+        ORDER BY total_seconds DESC
         LIMIT 3
     ''', (today,)).fetchall()
 
@@ -2104,24 +2341,31 @@ def focus_leaderboard():
         for i, row in enumerate(top5_rows)
     ]
 
-    # 내 순위 (Top5 밖일 경우)
     my_rank = None
     my_record = None
     if current_username:
         rank_row = conn.execute('''
             SELECT COUNT(*) + 1 AS rank
-            FROM focus_records
-            WHERE date = ? AND total_seconds > (
-                SELECT COALESCE(total_seconds, 0)
-                FROM focus_records WHERE username = ? AND date = ?
+            FROM (
+                SELECT user_id, SUM(duration_sec) AS total_seconds
+                FROM study_sessions
+                WHERE DATE(started_at) = ?
+                GROUP BY user_id
+            )
+            WHERE total_seconds > (
+                SELECT COALESCE(SUM(duration_sec), 0)
+                FROM study_sessions
+                WHERE user_id = ? AND DATE(started_at) = ?
             )
         ''', (today, current_username, today)).fetchone()
 
         me_row = conn.execute('''
-            SELECT fr.username, u.nickname, u.profile_url, fr.total_seconds, fr.sessions
-            FROM focus_records fr
-            JOIN users u ON u.username = fr.username
-            WHERE fr.username = ? AND fr.date = ?
+            SELECT ss.user_id AS username, u.nickname, u.profile_url,
+                   SUM(ss.duration_sec) AS total_seconds, COUNT(ss.id) AS sessions
+            FROM study_sessions ss
+            JOIN users u ON u.username = ss.user_id
+            WHERE ss.user_id = ? AND DATE(ss.started_at) = ?
+            GROUP BY ss.user_id
         ''', (current_username, today)).fetchone()
 
         if me_row:
@@ -2136,15 +2380,13 @@ def focus_leaderboard():
             }
 
     conn.close()
-
     in_top5 = any(r['username'] == current_username for r in top5)
-
     return jsonify({
         'top5': top5,
         'my_record': my_record if not in_top5 else None,
         'in_top5': in_top5,
         'current_username': current_username,
-    })  # top5 key 이름은 하위 호환 유지
+    })
 
 
 @app.route('/api/clover')
